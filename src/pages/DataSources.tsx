@@ -80,16 +80,16 @@ const DataSources: React.FC = () => {
 
     const handleToggleStatus = async (source: DataSourceConfig) => {
         try {
-            // For External API sources, call ApiPolling endpoints
+            // For External API sources, update the individual data source status
             if (source.sourceType === 1) {
-                if (source.isEnabled) {
-                    await apiService.stopApiPolling();
-                    showNotification('success', 'API Polling Stopped', 'External API polling has been stopped');
-                } else {
-                    await apiService.startApiPolling();
-                    showNotification('success', 'API Polling Started', 'External API polling has been started');
-                }
-                await loadDataSources();
+                const updatedSource = { ...source, isEnabled: !source.isEnabled };
+                await apiService.updateDataSource(source.id, updatedSource);
+                showNotification(
+                    'success',
+                    'Status Updated',
+                    `API data source has been ${updatedSource.isEnabled ? 'enabled' : 'disabled'}`
+                );
+                loadDataSources();
                 return;
             }
 
@@ -222,8 +222,10 @@ const DataSources: React.FC = () => {
                             icon={<ReloadOutlined />}
                             onClick={async () => {
                                 try {
+                                    // For individual API sources, we might need a different endpoint
+                                    // For now, using the global refresh - this could be updated to be per-source
                                     await apiService.refreshApiPolling();
-                                    showNotification('success', 'API Polling Refreshed', 'External API polling refresh requested');
+                                    showNotification('success', 'API Polling Refreshed', 'API polling refresh requested');
                                     await loadDataSources();
                                 } catch (error) {
                                     const apiError = handleApiError(error);

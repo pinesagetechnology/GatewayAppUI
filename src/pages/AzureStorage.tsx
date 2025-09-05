@@ -52,17 +52,13 @@ const AzureStorage: React.FC = () => {
     const loadBlobs = async (containerName: string): Promise<void> => {
         try {
             const response = await apiService.listBlobs(containerName);
-
             // Convert string array to BlobItem objects for the table
             const blobItems: BlobItem[] = response.data.blobs.map((name, index) => ({
                 name,
-                size: undefined, // API doesn't provide size
-                lastModified: undefined, // API doesn't provide date
                 url: azureInfo?.accountName ?
                     `https://${azureInfo.accountName}.blob.core.windows.net/${containerName}/${name}` :
                     undefined
             }));
-
             setBlobs(blobItems);
             setSelectedContainer(containerName);
         } catch (error) {
@@ -137,20 +133,20 @@ const AzureStorage: React.FC = () => {
             dataIndex: 'name',
             key: 'name',
         },
-        {
-            title: 'Size',
-            dataIndex: 'size',
-            key: 'size',
-            render: (size: number | undefined) =>
-                size ? `${(size / 1024 / 1024).toFixed(2)} MB` : 'Unknown',
-        },
-        {
-            title: 'Last Modified',
-            dataIndex: 'lastModified',
-            key: 'lastModified',
-            render: (date: string | undefined) =>
-                date ? new Date(date).toLocaleString() : 'Unknown',
-        },
+        // {
+        //     title: 'Size',
+        //     dataIndex: 'size',
+        //     key: 'size',
+        //     render: (size: number | undefined) =>
+        //         size ? `${(size / 1024 / 1024).toFixed(2)} MB` : 'Unknown',
+        // },
+        // {
+        //     title: 'Last Modified',
+        //     dataIndex: 'lastModified',
+        //     key: 'lastModified',
+        //     render: (date: string | undefined) =>
+        //         date ? new Date(date).toLocaleString() : 'Unknown',
+        // },
         {
             title: 'Actions',
             key: 'actions',
@@ -169,7 +165,7 @@ const AzureStorage: React.FC = () => {
                     >
                         View
                     </Button>
-                    <Popconfirm
+                    {/* <Popconfirm
                         title="Are you sure you want to delete this blob?"
                         onConfirm={() => handleDeleteBlob(record.name)}
                         okText="Yes"
@@ -182,7 +178,7 @@ const AzureStorage: React.FC = () => {
                         >
                             Delete
                         </Button>
-                    </Popconfirm>
+                    </Popconfirm> */}
                 </Space>
             ),
         },

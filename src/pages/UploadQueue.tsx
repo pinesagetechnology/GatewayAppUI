@@ -42,7 +42,6 @@ const UploadQueue: React.FC = () => {
 
   // Helper function to convert FileStatus enum to string
   const getStatusString = (status: FileStatus): string => {
-    console.log('getStatusString',status);
     switch (status) {
       case FileStatus.Pending: return 'Pending';
       case FileStatus.Processing: return 'Processing';
@@ -62,8 +61,7 @@ const UploadQueue: React.FC = () => {
         apiService.getUploadProcessorStatus(),
         apiService.getQueueSummary(),
       ]);
-      console.log('processorResponse',processorResponse);
-      console.log('queueResponse',queueResponse);
+
       setProcessorStatus(processorResponse.data);
       setQueueData(queueResponse.data.recentUploads || []);
 
