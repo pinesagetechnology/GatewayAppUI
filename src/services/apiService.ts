@@ -1,13 +1,14 @@
 import { DataSourceConfig } from '@/models/DataSource';
 import { FileMonitoringStatus } from '@/models/FileMonitorStatus';
 import { HealthStat, HealthStatus } from '@/models/Health';
-import { QueueSummary } from '@/models/QueueSummary';
+import { UploadQueueSummary } from '@/models/QueueSummary';
 import { AzureStorageInfo, BlobInfoResponse, ContainerList } from '@/models/AzureStorageInfo';
 import { UploadProcessStatus } from '@/models/Upload';
 import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
 import { DatabaseConfig } from '@/models/DatabaseConfig';
 import { AzureStorageConfigRequest, CreateDataSourceRequest, UpdateDataSourceRequest } from '@/models/Requests';
 import { ApiError } from '@/models/ApiError';
+import { ApiPollingStatus } from '@/models/ApiPollingStatus';
 
 const API_BASE_URL = process.env.NODE_ENV === 'development' ? 'https://localhost:7057' : 'https://localhost:7057';
 
@@ -50,57 +51,67 @@ apiClient.interceptors.response.use(
 // API service methods
 export const apiService = {
     // Health and system
-    getHealth: (): Promise<AxiosResponse<HealthStatus>> => 
+    getHealth: (): Promise<AxiosResponse<HealthStatus>> =>
         apiClient.get('/api/health'),
-    getSystemStats: (): Promise<AxiosResponse<HealthStat>> => 
+    getSystemStats: (): Promise<AxiosResponse<HealthStat>> =>
         apiClient.get('/api/health/stats'),
 
     // Upload processor
-    getUploadProcessorStatus: (): Promise<AxiosResponse<UploadProcessStatus>> => 
+    getUploadProcessorStatus: (): Promise<AxiosResponse<UploadProcessStatus>> =>
         apiClient.get('/api/uploadprocessor/status'),
-    startUploadProcessor: (): Promise<AxiosResponse<void>> => 
+    startUploadProcessor: (): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/uploadprocessor/start'),
-    stopUploadProcessor: (): Promise<AxiosResponse<void>> => 
+    stopUploadProcessor: (): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/uploadprocessor/stop'),
-    pauseUploadProcessor: (): Promise<AxiosResponse<void>> => 
+    pauseUploadProcessor: (): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/uploadprocessor/pause'),
-    resumeUploadProcessor: (): Promise<AxiosResponse<void>> => 
+    resumeUploadProcessor: (): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/uploadprocessor/resume'),
     processUploadsNow: (maxConcurrent: number = 3): Promise<AxiosResponse<void>> =>
         apiClient.post(`/api/uploadprocessor/process-now?maxConcurrent=${maxConcurrent}`),
-    retryFailedUploads: (): Promise<AxiosResponse<void>> => 
+    retryFailedUploads: (): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/uploadprocessor/retry-failed'),
-    getQueueSummary: (): Promise<AxiosResponse<QueueSummary>> => 
+    getQueueSummary: (): Promise<AxiosResponse<UploadQueueSummary>> =>
         apiClient.get('/api/uploadprocessor/queue-summary'),
 
     // File monitoring
-    getFileMonitoringStatus: (): Promise<AxiosResponse<FileMonitoringStatus>> => 
+    getFileMonitoringStatus: (): Promise<AxiosResponse<FileMonitoringStatus>> =>
         apiClient.get('/api/filemonitoring/status'),
-    startFileMonitoring: (): Promise<AxiosResponse<void>> => 
+    startFileMonitoring: (): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/filemonitoring/start'),
-    stopFileMonitoring: (): Promise<AxiosResponse<void>> => 
+    stopFileMonitoring: (): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/filemonitoring/stop'),
-    refreshDataSources: (): Promise<AxiosResponse<void>> => 
+    refreshDataSources: (): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/filemonitoring/refresh'),
 
+    // ApiPolling (External API Datasource control)
+    getApiPollingStatus: (): Promise<AxiosResponse<ApiPollingStatus>> =>
+        apiClient.get('/api/ApiPolling/status'),
+    startApiPolling: (): Promise<AxiosResponse<void>> =>
+        apiClient.post('/api/ApiPolling/start'),
+    stopApiPolling: (): Promise<AxiosResponse<void>> =>
+        apiClient.post('/api/ApiPolling/stop'),
+    refreshApiPolling: (): Promise<AxiosResponse<void>> =>
+        apiClient.post('/api/ApiPolling/refresh'),
+
     // Data sources
-    getDataSources: (): Promise<AxiosResponse<DataSourceConfig[]>> => 
+    getDataSources: (): Promise<AxiosResponse<DataSourceConfig[]>> =>
         apiClient.get('/api/datasource'),
-    getDataSource: (id: string | number): Promise<AxiosResponse<DataSourceConfig>> => 
+    getDataSource: (id: string | number): Promise<AxiosResponse<DataSourceConfig>> =>
         apiClient.get(`/api/datasource/${id}`),
-    createDataSource: (data: Partial<CreateDataSourceRequest>): Promise<AxiosResponse<CreateDataSourceRequest>> => 
+    createDataSource: (data: Partial<CreateDataSourceRequest>): Promise<AxiosResponse<CreateDataSourceRequest>> =>
         apiClient.post('/api/datasource', data),
-    updateDataSource: (id: string | number, data: Partial<UpdateDataSourceRequest>): Promise<AxiosResponse<UpdateDataSourceRequest>> => 
+    updateDataSource: (id: string | number, data: Partial<UpdateDataSourceRequest>): Promise<AxiosResponse<UpdateDataSourceRequest>> =>
         apiClient.put(`/api/datasource/${id}`, data),
-    deleteDataSource: (id: string | number): Promise<AxiosResponse<void>> => 
+    deleteDataSource: (id: string | number): Promise<AxiosResponse<void>> =>
         apiClient.delete(`/api/datasource/${id}`),
-    toggleDataSource: (id: string | number): Promise<AxiosResponse<void>> => 
+    toggleDataSource: (id: string | number): Promise<AxiosResponse<void>> =>
         apiClient.post(`/api/datasource/${id}/toggle`),
 
     // Azure Storage
-    getAzureStorageInfo: (): Promise<AxiosResponse<AzureStorageInfo>> => 
+    getAzureStorageInfo: (): Promise<AxiosResponse<AzureStorageInfo>> =>
         apiClient.get('/api/azurestorage/info'),
-    listContainers: (): Promise<AxiosResponse<ContainerList[]>> => 
+    listContainers: (): Promise<AxiosResponse<ContainerList[]>> =>
         apiClient.get('/api/azurestorage/containers'),
     listBlobs: (containerName: string, prefix?: string): Promise<AxiosResponse<BlobInfoResponse>> =>
         apiClient.get(`/api/azurestorage/containers/${containerName}/blobs`, {
@@ -110,13 +121,13 @@ export const apiService = {
         apiClient.post(`/api/azurestorage/containers/${containerName}`),
     deleteBlob: (containerName: string, blobName: string): Promise<AxiosResponse<void>> =>
         apiClient.delete(`/api/azurestorage/containers/${containerName}/blobs/${blobName}`),
-    configureAzureStorage: (config: AzureStorageConfigRequest): Promise<AxiosResponse<void>> => 
+    configureAzureStorage: (config: AzureStorageConfigRequest): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/azurestorage/configure', config),
 
     // Database and configuration
-    getConfigurations: (): Promise<AxiosResponse<DatabaseConfig[]>> => 
+    getConfigurations: (): Promise<AxiosResponse<DatabaseConfig[]>> =>
         apiClient.get('/api/database/config'),
-    setConfiguration: (config: DatabaseConfig): Promise<AxiosResponse<void>> => 
+    setConfiguration: (config: DatabaseConfig): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/database/config', config),
 };
 
@@ -161,8 +172,9 @@ export const formatDuration = (milliseconds: number): string => {
     }
 };
 
-export const getStatusColor = (status?: string): string => {
-    switch (status?.toLowerCase()) {
+export const getStatusColor = (status?: string | any): string => {
+    const statusStr = typeof status === 'string' ? status : String(status || '');
+    switch (statusStr.toLowerCase()) {
         case 'completed':
         case 'success':
         case 'active':

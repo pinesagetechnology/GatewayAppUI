@@ -1,22 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table, Card, Button, Space, Tag, Progress, Typography, Row, Col,
-  Statistic, Select, Input, Modal, Alert, Dropdown,
+  Table, Card, Button, Space, Tag, Typography, Row, Col,
+  Statistic, Select, Input, Modal,
   Popconfirm, Empty, Badge, Descriptions
 } from 'antd';
 import {
   ReloadOutlined, PlayCircleOutlined, PauseCircleOutlined,
-  DeleteOutlined, SearchOutlined, FilterOutlined,
-  EyeOutlined, MoreOutlined, CloudUploadOutlined,
-  CheckCircleOutlined, ExclamationCircleOutlined, ClockCircleOutlined
 } from '@ant-design/icons';
 import { useSignalR } from '../contexts/SignalRContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { apiService, formatFileSize, formatDuration, getStatusColor, handleApiError } from '../services/apiService';
+import { apiService, formatFileSize, getStatusColor, handleApiError } from '../services/apiService';
 import { UploadProcessStatus } from '../models/Upload';
-import { QueueSummary, RecentUpload } from '../models/QueueSummary';
+import { UploadQueueSummary, RecentUpload, FileStatus } from '../models/QueueSummary';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { Option } = Select;
 const { Search } = Input;
 
@@ -43,6 +40,20 @@ const UploadQueue: React.FC = () => {
   const { uploadUpdates } = useSignalR();
   const { showNotification } = useNotification();
 
+  // Helper function to convert FileStatus enum to string
+  const getStatusString = (status: FileStatus): string => {
+    console.log('getStatusString',status);
+    switch (status) {
+      case FileStatus.Pending: return 'Pending';
+      case FileStatus.Processing: return 'Processing';
+      case FileStatus.Uploading: return 'Uploading';
+      case FileStatus.Completed: return 'Completed';
+      case FileStatus.Failed: return 'Failed';
+      case FileStatus.Archived: return 'Canceled';
+      default: return 'Unknown';
+    }
+  };
+
   const loadData = async (): Promise<void> => {
     try {
       setLoading(true);
@@ -51,7 +62,8 @@ const UploadQueue: React.FC = () => {
         apiService.getUploadProcessorStatus(),
         apiService.getQueueSummary(),
       ]);
-
+      console.log('processorResponse',processorResponse);
+      console.log('queueResponse',queueResponse);
       setProcessorStatus(processorResponse.data);
       setQueueData(queueResponse.data.recentUploads || []);
 
@@ -68,9 +80,10 @@ const UploadQueue: React.FC = () => {
 
     // Status filter
     if (filters.status !== 'all') {
-      filtered = filtered.filter(item => 
-        item.status.toLowerCase() === filters.status.toLowerCase()
-      );
+      filtered = filtered.filter(item => {
+        const itemStatusString = getStatusString(item.status);
+        return itemStatusString.toLowerCase() === filters.status.toLowerCase();
+      });
     }
 
     // File type filter
@@ -90,7 +103,6 @@ const UploadQueue: React.FC = () => {
         item.fileName.toLowerCase().includes(filters.search.toLowerCase())
       );
     }
-
     setFilteredData(filtered);
   };
 
@@ -174,23 +186,26 @@ const UploadQueue: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)}>
-          {status}
-        </Tag>
-      ),
+      render: (status: FileStatus) => {
+        const statusString = getStatusString(status);
+        return (
+          <Tag color={getStatusColor(statusString)}>
+            {statusString}
+          </Tag>
+        );
+      },
     },
     {
       title: 'File Size',
-      dataIndex: 'fileSize',
-      key: 'fileSize',
+      dataIndex: 'fileSizeBytes',
+      key: 'fileSizeBytes',
       width: 100,
       render: (size: number) => formatFileSize(size),
     },
     {
-      title: 'Started At',
-      dataIndex: 'startedAt',
-      key: 'startedAt',
+      title: 'Created At',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
       width: 150,
       render: (date: string) => new Date(date).toLocaleString(),
     },
@@ -200,6 +215,20 @@ const UploadQueue: React.FC = () => {
       key: 'completedAt',
       width: 150,
       render: (date: string | null) => date ? new Date(date).toLocaleString() : '-',
+    },
+    {
+      title: 'Attempts',
+      dataIndex: 'attemptCount',
+      key: 'attemptCount',
+      width: 80,
+      render: (count: number) => count,
+    },
+    {
+      title: 'Progress',
+      dataIndex: 'progressPercent',
+      key: 'progressPercent',
+      width: 100,
+      render: (percent: number) => `${percent}%`,
     },
   ];
 
@@ -289,6 +318,7 @@ const UploadQueue: React.FC = () => {
               <Option value="processing">Processing</Option>
               <Option value="completed">Completed</Option>
               <Option value="failed">Failed</Option>
+              <Option value="canceled">Canceled</Option>
             </Select>
           </Col>
           <Col xs={24} sm={12} md={6}>
@@ -358,19 +388,30 @@ const UploadQueue: React.FC = () => {
               {selectedUpload.fileName}
             </Descriptions.Item>
             <Descriptions.Item label="Status">
-              <Tag color={getStatusColor(selectedUpload.status)}>
-                {selectedUpload.status}
+              <Tag color={getStatusColor(getStatusString(selectedUpload.status))}>
+                {getStatusString(selectedUpload.status)}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="File Size">
-              {formatFileSize(selectedUpload.fileSize)}
+              {formatFileSize(selectedUpload.fileSizeBytes)}
             </Descriptions.Item>
-            <Descriptions.Item label="Started At">
-              {new Date(selectedUpload.startedAt).toLocaleString()}
+            <Descriptions.Item label="Created At">
+              {new Date(selectedUpload.createdAt).toLocaleString()}
             </Descriptions.Item>
             <Descriptions.Item label="Completed At">
               {selectedUpload.completedAt ? new Date(selectedUpload.completedAt).toLocaleString() : 'Not completed'}
             </Descriptions.Item>
+            <Descriptions.Item label="Attempts">
+              {selectedUpload.attemptCount}
+            </Descriptions.Item>
+            <Descriptions.Item label="Progress">
+              {selectedUpload.progressPercent}%
+            </Descriptions.Item>
+            {selectedUpload.errorMessage && (
+              <Descriptions.Item label="Error Message">
+                {selectedUpload.errorMessage}
+              </Descriptions.Item>
+            )}
           </Descriptions>
         )}
       </Modal>

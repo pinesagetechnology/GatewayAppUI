@@ -11,6 +11,7 @@ import {
 import { useNotification } from '../contexts/NotificationContext';
 import { apiService, handleApiError } from '../services/apiService';
 import { DataSourceConfig } from '../models/DataSource';
+import { DataSourceType } from '@/AppEnums';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -45,7 +46,7 @@ const DataSources: React.FC = () => {
             sourceType: 0, // Default to Folder
             isEnabled: true,
             pollingIntervalMinutes: 5,
-            filePattern: '*.{json,jpg,jpeg,png}'
+            filePattern: '*.{json,jpg,jpeg,png,txt,csv}'
         });
         setModalVisible(true);
     };
@@ -58,8 +59,10 @@ const DataSources: React.FC = () => {
             isEnabled: source.isEnabled,
             pollingIntervalMinutes: source.pollingIntervalMinutes,
             filePattern: source.filePattern,
-            connectionString: source.connectionString,
-            description: source.description
+            folderPath: source.folderPath,
+            apiEndpoint: source.apiEndpoint,
+            apiKey: source.apiKey,
+            additionalSettings: source.additionalSettings || ''
         });
         setModalVisible(true);
     };
@@ -77,6 +80,20 @@ const DataSources: React.FC = () => {
 
     const handleToggleStatus = async (source: DataSourceConfig) => {
         try {
+            // For External API sources, call ApiPolling endpoints
+            if (source.sourceType === 1) {
+                if (source.isEnabled) {
+                    await apiService.stopApiPolling();
+                    showNotification('success', 'API Polling Stopped', 'External API polling has been stopped');
+                } else {
+                    await apiService.startApiPolling();
+                    showNotification('success', 'API Polling Started', 'External API polling has been started');
+                }
+                await loadDataSources();
+                return;
+            }
+
+            // For Folder sources, toggle via update
             const updatedSource = { ...source, isEnabled: !source.isEnabled };
             await apiService.updateDataSource(source.id, updatedSource);
             showNotification(
@@ -93,11 +110,38 @@ const DataSources: React.FC = () => {
 
     const handleSubmit = async (values: any) => {
         try {
+            const sourceType: number = values.sourceType;
+            // Build payloads according to source type
+            const basePayload: any = {
+                name: values.name,
+                isEnabled: values.isEnabled,
+                pollingIntervalMinutes: values.pollingIntervalMinutes,
+            };
+
+            let payload: any;
+            if (sourceType === DataSourceType.LocalFolder || sourceType === 0) {
+                payload = {
+                    ...basePayload,
+                    filePattern: values.filePattern,
+                    folderPath: values.folderPath,
+                };
+            } else {
+                payload = {
+                    ...basePayload,
+                    apiEndpoint: values.apiEndpoint,
+                    apiKey: values.apiKey,
+                    additionalSettings: values.additionalSettings,
+                };
+            }
+
             if (editingSource) {
-                await apiService.updateDataSource(editingSource.id, values);
+                await apiService.updateDataSource(editingSource.id, payload);
                 showNotification('success', 'Data Source Updated', 'Data source has been updated successfully');
             } else {
-                await apiService.createDataSource(values);
+                await apiService.createDataSource({
+                    sourceType,
+                    ...payload,
+                });
                 showNotification('success', 'Data Source Created', 'Data source has been created successfully');
             }
             setModalVisible(false);
@@ -172,7 +216,25 @@ const DataSources: React.FC = () => {
                     >
                         Edit
                     </Button>
-                    <Popconfirm
+                    {record.sourceType === 1 && (
+                        <Button
+                            type="link"
+                            icon={<ReloadOutlined />}
+                            onClick={async () => {
+                                try {
+                                    await apiService.refreshApiPolling();
+                                    showNotification('success', 'API Polling Refreshed', 'External API polling refresh requested');
+                                    await loadDataSources();
+                                } catch (error) {
+                                    const apiError = handleApiError(error);
+                                    showNotification('error', 'Refresh Error', apiError.message);
+                                }
+                            }}
+                        >
+                            Refresh
+                        </Button>
+                    )}
+                    {/* <Popconfirm
                         title="Are you sure you want to delete this data source?"
                         onConfirm={() => handleDelete(record.id)}
                         okText="Yes"
@@ -185,7 +247,7 @@ const DataSources: React.FC = () => {
                         >
                             Delete
                         </Button>
-                    </Popconfirm>
+                    </Popconfirm> */}
                 </Space>
             ),
         },
@@ -262,6 +324,9 @@ const DataSources: React.FC = () => {
                     layout="vertical"
                     onFinish={handleSubmit}
                 >
+                    <Form.Item shouldUpdate noStyle>
+                        {() => null}
+                    </Form.Item>
                     <Form.Item
                         name="name"
                         label="Name"
@@ -297,26 +362,69 @@ const DataSources: React.FC = () => {
                         <InputNumber min={1} max={1440} style={{ width: '100%' }} />
                     </Form.Item>
 
-                    <Form.Item
-                        name="filePattern"
-                        label="File Pattern"
-                        rules={[{ required: true, message: 'Please enter file pattern' }]}
-                    >
-                        <Input placeholder="e.g., *.{json,jpg,jpeg,png}" />
+                    {/* Folder-specific fields */}
+                    <Form.Item shouldUpdate={(prev, curr) => prev.sourceType !== curr.sourceType} noStyle>
+                        {() => {
+                            const currentType = form.getFieldValue('sourceType');
+                            if (currentType === 0) {
+                                return (
+                                    <>
+                                        <Form.Item
+                                            name="folderPath"
+                                            label="Folder Path"
+                                            rules={[{ required: true, message: 'Please enter folder path' }]}
+                                        >
+                                            <Input placeholder="C:\\path\\to\\incoming" />
+                                        </Form.Item>
+                                        <Form.Item
+                                            name="filePattern"
+                                            label={
+                                                <Tooltip title="example *.{json,jpg,jpeg,png,txt,csv}">
+                                                    File Pattern
+                                                </Tooltip>
+                                            }
+                                            rules={[{ required: true, message: 'Please enter file pattern' }]}
+                                        >
+                                            <Input placeholder="e.g., *.{json,jpg,jpeg,png,txt,csv}" />
+                                        </Form.Item>
+                                    </>
+                                );
+                            }
+                            return null;
+                        }}
                     </Form.Item>
 
-                    <Form.Item
-                        name="connectionString"
-                        label="Connection String"
-                    >
-                        <TextArea rows={3} placeholder="Enter connection string or path" />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="description"
-                        label="Description"
-                    >
-                        <TextArea rows={2} placeholder="Enter description" />
+                    {/* API-specific fields */}
+                    <Form.Item shouldUpdate={(prev, curr) => prev.sourceType !== curr.sourceType} noStyle>
+                        {() => {
+                            const currentType = form.getFieldValue('sourceType');
+                            if (currentType === 1) {
+                                return (
+                                    <>
+                                        <Form.Item
+                                            name="apiEndpoint"
+                                            label="API Endpoint"
+                                            rules={[{ required: true, message: 'Please enter API endpoint' }]}
+                                        >
+                                            <Input placeholder="https://api.example.com/data" />
+                                        </Form.Item>
+                                        <Form.Item
+                                            name="apiKey"
+                                            label="API Key"
+                                        >
+                                            <Input placeholder="Optional API key" />
+                                        </Form.Item>
+                                        <Form.Item
+                                            name="additionalSettings"
+                                            label="Additional Settings (JSON)"
+                                        >
+                                            <TextArea rows={3} placeholder='{"headers": {"Accept": "application/json"}}' />
+                                        </Form.Item>
+                                    </>
+                                );
+                            }
+                            return null;
+                        }}
                     </Form.Item>
 
                     <Form.Item>

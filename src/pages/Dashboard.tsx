@@ -13,7 +13,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { apiService, formatFileSize, getStatusColor, handleApiError } from '../services/apiService';
 import { UploadProcessStatus } from '../models/Upload';
 import { FileMonitoringStatus } from '../models/FileMonitorStatus';
-import { QueueSummary } from '../models/QueueSummary';
+import { UploadQueueSummary } from '../models/QueueSummary';
 import { HealthStatus } from '../models/Health';
 import { AzureStorageInfo } from '../models/AzureStorageInfo';
 
@@ -22,7 +22,7 @@ const { Title, Text } = Typography;
 interface DashboardData {
     processorStatus: UploadProcessStatus | null;
     monitoringStatus: FileMonitoringStatus | null;
-    queueSummary: QueueSummary | null;
+    queueSummary: UploadQueueSummary | null;
     systemHealth: HealthStatus | null;
     azureInfo: AzureStorageInfo | null;
     recentUploads: UploadItem[];
@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
                 apiService.getHealth(),
                 apiService.getAzureStorageInfo(),
             ]);
-console.log(healthResponse);
+
             const newData = { ...dashboardData };
 
             // Process responses
@@ -82,7 +82,7 @@ console.log(healthResponse);
             }
 
             if (queueResponse.status === 'fulfilled') {
-                const queueData = queueResponse.value.data as QueueSummary;
+                const queueData = queueResponse.value.data as UploadQueueSummary;
                 newData.queueSummary = queueData;
                 // Normalize recentUploads to UploadItem[] with expected casing
                 newData.recentUploads = (queueData.recentUploads || []).map((u) => ({
