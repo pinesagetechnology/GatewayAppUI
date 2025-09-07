@@ -73,7 +73,6 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children }) =>
 
             // Set up event handlers
             newConnection.on('UploadProgressUpdated', (data: UploadProgressData) => {
-                console.log('UploadProgressUpdated', data);
                 setUploadUpdates(prev => {
                     const updated = prev.filter(item => item.uploadId !== data.UploadId);
                     return [...updated, {
@@ -88,7 +87,6 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children }) =>
             });
 
             newConnection.on('UploadCompleted', (data: UploadCompletedData) => {
-                console.log('UploadCompleted', data);
                 showNotification('success', 'Upload Completed',
                     `${data.FileName} uploaded successfully in ${data.Duration.toFixed(1)}s`);
 
@@ -97,7 +95,6 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children }) =>
             });
 
             newConnection.on('UploadFailed', (data: UploadFailedData) => {
-                console.log('UploadFailed', data);
                 showNotification('error', 'Upload Failed',
                     `${data.FileName} failed: ${data.Error}`);
 

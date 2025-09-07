@@ -194,49 +194,6 @@ const SystemHealth: React.FC = () => {
                 </Row>
             )}
 
-            {/* Additional Statistics */}
-            {systemStats && (
-                <Card title="Additional Statistics" style={{ marginTop: 24 }}>
-                    <Row gutter={[16, 16]}>
-                        <Col xs={24} sm={12} md={8}>
-                            <Statistic
-                                title="History Records"
-                                value={systemStats.historyRecords}
-                            />
-                        </Col>
-                        <Col xs={24} sm={12} md={8}>
-                            <Statistic
-                                title="Data Sources"
-                                value={systemStats.dataSources}
-                            />
-                        </Col>
-                        <Col xs={24} sm={12} md={8}>
-                            <Statistic
-                                title="Enabled Data Sources"
-                                value={systemStats.enabledDataSources}
-                            />
-                        </Col>
-                        <Col xs={24} sm={12} md={8}>
-                            <Statistic
-                                title="Uploads Last 24h"
-                                value={systemStats.uploadsLast24Hours}
-                            />
-                        </Col>
-                        <Col xs={24} sm={12} md={8}>
-                            <Statistic
-                                title="Failures Last 24h"
-                                value={systemStats.failuresLast24Hours}
-                            />
-                        </Col>
-                        <Col xs={24} sm={12} md={8}>
-                            <Statistic
-                                title="Last Calculated"
-                                value={new Date(systemStats.lastCalculated).toLocaleString()}
-                            />
-                        </Col>
-                    </Row>
-                </Card>
-            )}
         </div>
     );
 };

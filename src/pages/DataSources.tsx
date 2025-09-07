@@ -78,33 +78,118 @@ const DataSources: React.FC = () => {
         }
     };
 
-    const handleToggleStatus = async (source: DataSourceConfig) => {
+    // Separate function to enable/disable File Monitor data sources
+    const handleToggleFileMonitor = async (source: DataSourceConfig) => {
         try {
-            // For External API sources, update the individual data source status
-            if (source.sourceType === 1) {
-                const updatedSource = { ...source, isEnabled: !source.isEnabled };
-                await apiService.updateDataSource(source.id, updatedSource);
-                showNotification(
-                    'success',
-                    'Status Updated',
-                    `API data source has been ${updatedSource.isEnabled ? 'enabled' : 'disabled'}`
-                );
-                loadDataSources();
+            if (source.sourceType !== 0) {
+                showNotification('error', 'Invalid Operation', 'This function is only for File Monitor data sources');
                 return;
             }
 
-            // For Folder sources, toggle via update
             const updatedSource = { ...source, isEnabled: !source.isEnabled };
             await apiService.updateDataSource(source.id, updatedSource);
+            
             showNotification(
                 'success',
-                'Status Updated',
-                `Data source has been ${updatedSource.isEnabled ? 'enabled' : 'disabled'}`
+                'File Monitor Status Updated',
+                `File Monitor "${source.name}" has been ${updatedSource.isEnabled ? 'enabled' : 'disabled'}`
             );
+            
             loadDataSources();
         } catch (error) {
             const apiError = handleApiError(error);
-            showNotification('error', 'Update Error', apiError.message);
+            showNotification('error', 'File Monitor Update Error', apiError.message);
+        }
+    };
+
+    // Separate function to enable/disable API data sources
+    const handleToggleApiDataSource = async (source: DataSourceConfig) => {
+        try {
+            if (source.sourceType !== 1) {
+                showNotification('error', 'Invalid Operation', 'This function is only for API data sources');
+                return;
+            }
+
+            const updatedSource = { ...source, isEnabled: !source.isEnabled };
+            await apiService.updateDataSource(source.id, updatedSource);
+            
+            showNotification(
+                'success',
+                'API Data Source Status Updated',
+                `API data source "${source.name}" has been ${updatedSource.isEnabled ? 'enabled' : 'disabled'}`
+            );
+            
+            loadDataSources();
+        } catch (error) {
+            const apiError = handleApiError(error);
+            showNotification('error', 'API Data Source Update Error', apiError.message);
+        }
+    };
+
+    // Bulk function to enable/disable all File Monitor data sources
+    const handleToggleAllFileMonitors = async (enable: boolean) => {
+        try {
+            const fileMonitorSources = dataSources.filter(source => source.sourceType === DataSourceType.LocalFolder);
+            
+            if (fileMonitorSources.length === 0) {
+                showNotification('info', 'No File Monitors', 'No File Monitor data sources found');
+                return;
+            }
+
+            const updatePromises = fileMonitorSources.map(source => 
+                apiService.updateDataSource(source.id, { ...source, isEnabled: enable })
+            );
+
+            await Promise.all(updatePromises);
+            
+            showNotification(
+                'success',
+                'Bulk File Monitor Update',
+                `All File Monitor data sources have been ${enable ? 'enabled' : 'disabled'}`
+            );
+            
+            loadDataSources();
+        } catch (error) {
+            const apiError = handleApiError(error);
+            showNotification('error', 'Bulk File Monitor Update Error', apiError.message);
+        }
+    };
+
+    // Bulk function to enable/disable all API data sources
+    const handleToggleAllApiDataSources = async (enable: boolean) => {
+        try {
+            const apiSources = dataSources.filter(source => source.sourceType === DataSourceType.Api);
+            
+            if (apiSources.length === 0) {
+                showNotification('info', 'No API Data Sources', 'No API data sources found');
+                return;
+            }
+
+            const updatePromises = apiSources.map(source => 
+                apiService.updateDataSource(source.id, { ...source, isEnabled: enable })
+            );
+
+            await Promise.all(updatePromises);
+            
+            showNotification(
+                'success',
+                'Bulk API Data Source Update',
+                `All API data sources have been ${enable ? 'enabled' : 'disabled'}`
+            );
+            
+            loadDataSources();
+        } catch (error) {
+            const apiError = handleApiError(error);
+            showNotification('error', 'Bulk API Data Source Update Error', apiError.message);
+        }
+    };
+
+    // Legacy function for backward compatibility - now routes to specific functions
+    const handleToggleStatus = async (source: DataSourceConfig) => {
+        if (source.sourceType === 0) {
+            await handleToggleFileMonitor(source);
+        } else if (source.sourceType === 1) {
+            await handleToggleApiDataSource(source);
         }
     };
 
@@ -209,32 +294,66 @@ const DataSources: React.FC = () => {
             key: 'actions',
             render: (text: any, record: DataSourceConfig) => (
                 <Space>
-                    <Button
-                        type="link"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(record)}
+                    <Tooltip 
+                        title={record.isEnabled ? "Disable the data source before editing configuration" : "Edit data source configuration"}
+                        placement="top"
                     >
-                        Edit
-                    </Button>
-                    {record.sourceType === 1 && (
                         <Button
                             type="link"
-                            icon={<ReloadOutlined />}
-                            onClick={async () => {
-                                try {
-                                    // For individual API sources, we might need a different endpoint
-                                    // For now, using the global refresh - this could be updated to be per-source
-                                    await apiService.refreshApiPolling();
-                                    showNotification('success', 'API Polling Refreshed', 'API polling refresh requested');
-                                    await loadDataSources();
-                                } catch (error) {
-                                    const apiError = handleApiError(error);
-                                    showNotification('error', 'Refresh Error', apiError.message);
-                                }
+                            icon={<EditOutlined />}
+                            onClick={() => handleEdit(record)}
+                            disabled={record.isEnabled}
+                            style={{ 
+                                color: record.isEnabled ? '#d9d9d9' : undefined,
+                                cursor: record.isEnabled ? 'not-allowed' : 'pointer'
                             }}
                         >
-                            Refresh
+                            Edit
                         </Button>
+                    </Tooltip>
+                    
+                    {/* File Monitor specific actions */}
+                    {record.sourceType === 0 && (
+                        <Button
+                            type="link"
+                            icon={record.isEnabled ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+                            onClick={() => handleToggleFileMonitor(record)}
+                            style={{ color: record.isEnabled ? '#ff4d4f' : '#52c41a' }}
+                        >
+                            {record.isEnabled ? 'Disable Monitor' : 'Enable Monitor'}
+                        </Button>
+                    )}
+                    
+                    {/* API Data Source specific actions */}
+                    {record.sourceType === 1 && (
+                        <>
+                            <Button
+                                type="link"
+                                icon={record.isEnabled ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+                                onClick={() => handleToggleApiDataSource(record)}
+                                style={{ color: record.isEnabled ? '#ff4d4f' : '#52c41a' }}
+                            >
+                                {record.isEnabled ? 'Disable API' : 'Enable API'}
+                            </Button>
+                            {/*<Button
+                                type="link"
+                                icon={<ReloadOutlined />}
+                                onClick={async () => {
+                                    try {
+                                        // For individual API sources, we might need a different endpoint
+                                        // For now, using the global refresh - this could be updated to be per-source
+                                        await apiService.refreshApiPolling();
+                                        showNotification('success', 'API Polling Refreshed', 'API polling refresh requested');
+                                        await loadDataSources();
+                                    } catch (error) {
+                                        const apiError = handleApiError(error);
+                                        showNotification('error', 'Refresh Error', apiError.message);
+                                    }
+                                }}
+                            >
+                                Refresh
+                            </Button>*/}
+                        </>
                     )}
                     {/* <Popconfirm
                         title="Are you sure you want to delete this data source?"
@@ -268,6 +387,61 @@ const DataSources: React.FC = () => {
                     </Button>
                 </Space>
             </div>
+
+            {/* Bulk Actions */}
+            <Card style={{ marginBottom: 24 }}>
+                <Title level={4} style={{ marginBottom: 16 }}>Bulk Actions</Title>
+                <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12} md={6}>
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                            <Text strong>File Monitors</Text>
+                            <Space>
+                                <Button 
+                                    type="primary" 
+                                    size="small"
+                                    icon={<PlayCircleOutlined />}
+                                    onClick={() => handleToggleAllFileMonitors(true)}
+                                    disabled={dataSources.filter(s => s.sourceType === 0).length === 0}
+                                >
+                                    Enable All
+                                </Button>
+                                <Button 
+                                    size="small"
+                                    icon={<PauseCircleOutlined />}
+                                    onClick={() => handleToggleAllFileMonitors(false)}
+                                    disabled={dataSources.filter(s => s.sourceType === 0).length === 0}
+                                >
+                                    Disable All
+                                </Button>
+                            </Space>
+                        </Space>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                            <Text strong>API Data Sources</Text>
+                            <Space>
+                                <Button 
+                                    type="primary" 
+                                    size="small"
+                                    icon={<PlayCircleOutlined />}
+                                    onClick={() => handleToggleAllApiDataSources(true)}
+                                    disabled={dataSources.filter(s => s.sourceType === 1).length === 0}
+                                >
+                                    Enable All
+                                </Button>
+                                <Button 
+                                    size="small"
+                                    icon={<PauseCircleOutlined />}
+                                    onClick={() => handleToggleAllApiDataSources(false)}
+                                    disabled={dataSources.filter(s => s.sourceType === 1).length === 0}
+                                >
+                                    Disable All
+                                </Button>
+                            </Space>
+                        </Space>
+                    </Col>
+                </Row>
+            </Card>
 
             {/* Summary Cards */}
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
