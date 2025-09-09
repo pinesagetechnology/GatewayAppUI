@@ -250,12 +250,12 @@ server {
 }
 EOF
     
-    # Enable the site
-    sudo ln -sf /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/
+    # Enable the site explicitly and disable default
+    sudo ln -sfn /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/$APP_NAME
     sudo rm -f /etc/nginx/sites-enabled/default
     
-    # Test and restart Nginx
-    sudo nginx -t && sudo systemctl restart nginx
+    # Test and reload Nginx
+    sudo nginx -t && sudo systemctl reload nginx
     sudo systemctl enable nginx
     
     log "Nginx configured successfully"
