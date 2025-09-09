@@ -67,7 +67,7 @@ stop_services() {
 update_application() {
     log "Updating application..."
     
-    # Install dependencies
+    # Install dependencies (including dev dependencies for build)
     npm install
     
     # Build the application

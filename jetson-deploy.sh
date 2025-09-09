@@ -154,11 +154,11 @@ deploy_app() {
     cp -r . $APP_DIR/
     cd $APP_DIR
     
-    # Install dependencies with ARM64 optimizations
+    # Install dependencies with ARM64 optimizations (including dev dependencies for build)
     log "Installing dependencies..."
     npm config set target_arch arm64
     npm config set target_platform linux
-    npm install --production
+    npm install
     
     # Build the application
     log "Building application..."

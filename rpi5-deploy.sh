@@ -116,9 +116,9 @@ deploy_app() {
     cp -r . $APP_DIR/
     cd $APP_DIR
     
-    # Install dependencies
+    # Install dependencies (including dev dependencies for build)
     log "Installing dependencies..."
-    npm install --production
+    npm install
     
     # Build the application
     log "Building application..."
