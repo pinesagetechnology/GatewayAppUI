@@ -9,9 +9,22 @@ set -e  # Exit on any error
 # Configuration
 APP_NAME="react-ui-app"
 APP_DIR="/opt/${APP_NAME}"
-SERVICE_USER="pi"
 NODE_VERSION="18.19.0"
 PM2_APP_NAME="ui-app"
+
+# Get service user from user input
+get_service_user() {
+    echo -e "${BLUE}Please enter the service user for the application:${NC}"
+    read -p "Service user (default: pi): " SERVICE_USER
+    SERVICE_USER=${SERVICE_USER:-pi}
+    
+    # Validate that the user exists
+    if ! id "$SERVICE_USER" &>/dev/null; then
+        error "User '$SERVICE_USER' does not exist. Please create the user first or enter a valid username."
+    fi
+    
+    log "Using service user: $SERVICE_USER"
+}
 
 # Colors for output
 RED='\033[0;31m'
@@ -344,6 +357,7 @@ show_info() {
 main() {
     log "Starting Raspberry Pi 5 UI deployment..."
     
+    get_service_user
     check_root
     update_system
     install_nodejs

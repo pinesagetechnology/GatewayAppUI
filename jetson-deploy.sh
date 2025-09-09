@@ -9,9 +9,22 @@ set -e  # Exit on any error
 # Configuration
 APP_NAME="react-ui-app"
 APP_DIR="/opt/${APP_NAME}"
-SERVICE_USER="jetson"
 NODE_VERSION="18.19.0"
 PM2_APP_NAME="ui-app"
+
+# Get service user from user input
+get_service_user() {
+    echo -e "${BLUE}Please enter the service user for the application:${NC}"
+    read -p "Service user (default: jetson): " SERVICE_USER
+    SERVICE_USER=${SERVICE_USER:-jetson}
+    
+    # Validate that the user exists
+    if ! id "$SERVICE_USER" &>/dev/null; then
+        error "User '$SERVICE_USER' does not exist. Please create the user first or enter a valid username."
+    fi
+    
+    log "Using service user: $SERVICE_USER"
+}
 
 # Jetson-specific configurations
 JETSON_MODEL=$(tr -d '\0' < /proc/device-tree/model 2>/dev/null || echo "Unknown")
@@ -159,114 +172,81 @@ deploy_app() {
 configure_nginx() {
     log "Configuring Nginx reverse proxy with Jetson optimizations..."
     
-    # Create optimized Nginx configuration for Jetson
+    # Create Nginx configuration for Jetson (server block only)
     sudo tee /etc/nginx/sites-available/$APP_NAME > /dev/null <<EOF
-# Optimized Nginx configuration for NVIDIA Jetson
-worker_processes auto;
-worker_rlimit_nofile 8192;
-
-events {
-    worker_connections 4096;
-    use epoll;
-    multi_accept on;
-}
-
-http {
-    # Jetson-optimized settings
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
-    keepalive_timeout 30;
-    types_hash_max_size 2048;
-    server_tokens off;
+server {
+    listen 80;
+    server_name localhost;
+    root ${APP_DIR}/dist;
+    index index.html;
     
-    # Reduce memory usage
-    client_body_buffer_size 16K;
-    client_header_buffer_size 1k;
-    client_max_body_size 8m;
-    large_client_header_buffers 2 1k;
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
     
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
-    
-    # Logging
-    access_log /var/log/nginx/access.log;
-    error_log /var/log/nginx/error.log;
-    
-    server {
-        listen 80;
-        server_name localhost;
-        root ${APP_DIR}/dist;
-        index index.html;
+    # Serve static files directly
+    location / {
+        try_files \$uri \$uri/ /index.html;
         
-        # Security headers
-        add_header X-Frame-Options "SAMEORIGIN" always;
-        add_header X-XSS-Protection "1; mode=block" always;
-        add_header X-Content-Type-Options "nosniff" always;
-        
-        # Serve static files directly
-        location / {
-            try_files \$uri \$uri/ /index.html;
-            
-            # Cache headers for static assets
-            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-                expires 1y;
-                add_header Cache-Control "public, immutable";
-                access_log off;
-            }
+        # Cache headers for static assets
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            access_log off;
         }
-        
-        # Proxy API requests
-        location /api/ {
-            proxy_pass http://localhost:3001;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade \$http_upgrade;
-            proxy_set_header Connection 'upgrade';
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
-            proxy_cache_bypass \$http_upgrade;
-            
-            # Jetson-optimized proxy settings
-            proxy_connect_timeout 30s;
-            proxy_send_timeout 30s;
-            proxy_read_timeout 30s;
-        }
-        
-        # SignalR hub with WebSocket support
-        location /hubs/ {
-            proxy_pass http://localhost:3001;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade \$http_upgrade;
-            proxy_set_header Connection "upgrade";
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
-            proxy_cache_bypass \$http_upgrade;
-            
-            # WebSocket timeout settings
-            proxy_read_timeout 86400;
-            proxy_send_timeout 86400;
-        }
-        
-        # Gzip compression optimized for ARM
-        gzip on;
-        gzip_vary on;
-        gzip_min_length 1024;
-        gzip_comp_level 6;
-        gzip_types
-            text/plain
-            text/css
-            text/xml
-            text/javascript
-            application/javascript
-            application/xml+rss
-            application/json
-            application/xml
-            image/svg+xml;
     }
+    
+    # Proxy API requests (if backend exists)
+    location /api/ {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+        
+        # Jetson-optimized proxy settings
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+    
+    # SignalR hub with WebSocket support (if backend exists)
+    location /hubs/ {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+        
+        # WebSocket timeout settings
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+    
+    # Gzip compression optimized for ARM
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/javascript
+        application/xml+rss
+        application/json
+        application/xml
+        image/svg+xml;
 }
 EOF
     
@@ -502,6 +482,7 @@ show_info() {
 main() {
     log "Starting NVIDIA Jetson UI deployment..."
     
+    get_service_user
     check_jetson
     check_root
     update_system
