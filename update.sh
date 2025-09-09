@@ -90,8 +90,19 @@ update_application() {
 start_services() {
     log "Starting services..."
     
-    # Start PM2 application
-    pm2 start $PM2_APP_NAME
+    # Start or restart PM2 application
+    if pm2 list | grep -q "\b$PM2_APP_NAME\b"; then
+        pm2 restart $PM2_APP_NAME || true
+    else
+        cd "$APP_DIR"
+        if [[ -f "ecosystem.config.js" ]]; then
+            pm2 start ecosystem.config.js
+        else
+            # Fallback: start a serve process directly
+            pm2 start npx --name $PM2_APP_NAME -- serve -s dist -l 3001
+        fi
+        pm2 save
+    fi
     
     # Reload Nginx (just in case)
     sudo systemctl reload nginx
