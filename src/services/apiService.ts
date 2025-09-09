@@ -10,7 +10,7 @@ import { AzureStorageConfigRequest, CreateDataSourceRequest, UpdateDataSourceReq
 import { ApiError } from '@/models/ApiError';
 import { ApiPollingStatus } from '@/models/ApiPollingStatus';
 
-const API_BASE_URL = process.env.NODE_ENV === 'development' ? 'https://localhost:7057' : 'https://localhost:7057';
+const API_BASE_URL = process.env.NODE_ENV === 'development' ? 'https://localhost:7057' : 'https://127.0.0.1:5000';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
