@@ -10,7 +10,9 @@ import { AzureStorageConfigRequest, CreateDataSourceRequest, UpdateDataSourceReq
 import { ApiError } from '@/models/ApiError';
 import { ApiPollingStatus } from '@/models/ApiPollingStatus';
 
-const API_BASE_URL = process.env.NODE_ENV === 'development' ? 'https://localhost:7057' : 'https://127.0.0.1:5000';
+// Use relative base URL so the browser calls the same host serving the UI (Nginx),
+// and let Nginx proxy /api and /hubs to the backend (e.g., localhost:5000) on the device.
+const API_BASE_URL = '';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,

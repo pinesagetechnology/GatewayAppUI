@@ -155,9 +155,9 @@ server {
         }
     }
     
-    # Proxy API requests (if any)
+    # Proxy API requests to backend (adjust port if needed)
     location /api/ {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://localhost:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -170,7 +170,7 @@ server {
     
     # SignalR hub
     location /hubs/ {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://localhost:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
