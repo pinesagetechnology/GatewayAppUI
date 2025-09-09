@@ -67,7 +67,8 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({ children }) =>
     const connectToHub = useCallback(async (): Promise<void> => {
         try {
             const newConnection = new signalR.HubConnectionBuilder()
-                .withUrl('https://localhost:7057/uploadStatusHub')
+                // Use relative URL so it goes through Nginx on the device
+                .withUrl('/uploadStatusHub')
                 .withAutomaticReconnect()
                 .build();
 
