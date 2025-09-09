@@ -75,6 +75,7 @@ update_application() {
     npm run build
     
     # Copy new build to app directory
+    sudo mkdir -p "$APP_DIR"
     if [[ -d "$APP_DIR/dist" ]]; then
         sudo rm -rf "$APP_DIR/dist"
     fi

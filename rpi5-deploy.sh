@@ -107,23 +107,27 @@ setup_app_directory() {
 deploy_app() {
     log "Deploying application to ${APP_DIR}..."
     
-    # Copy application files (assuming current directory contains the app)
+    # Ensure we're in a project directory
     if [[ ! -f "package.json" ]]; then
         error "package.json not found. Please run this script from your project root directory."
     fi
-    
-    # Copy files
-    cp -r . $APP_DIR/
-    cd $APP_DIR
-    
+
     # Install dependencies (including dev dependencies for build)
     log "Installing dependencies..."
     npm install
-    
+
     # Build the application
     log "Building application..."
     npm run build
-    
+
+    # Prepare target directory and copy only built assets
+    log "Copying build artifacts to ${APP_DIR}/dist ..."
+    sudo mkdir -p "$APP_DIR"
+    if [[ -d "$APP_DIR/dist" ]]; then
+        sudo rm -rf "$APP_DIR/dist"
+    fi
+    sudo cp -r dist "$APP_DIR/"
+
     # Set proper permissions
     sudo chown -R $SERVICE_USER:$SERVICE_USER $APP_DIR
 }
