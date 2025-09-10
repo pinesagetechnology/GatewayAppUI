@@ -78,7 +78,23 @@ update_system() {
     sudo apt install -y curl wget git build-essential python3 python3-pip nginx
     
     # Install Jetson-specific packages
-    sudo apt install -y nvidia-l4t-jetson-multimedia-api jetson-stats
+    sudo apt install -y nvidia-l4t-jetson-multimedia-api
+
+    # Try to install jetson-stats via apt; if unavailable, fall back to pip3
+    if sudo apt install -y jetson-stats; then
+        log "Installed jetson-stats via apt"
+    else
+        warn "apt package 'jetson-stats' not found. Installing via pip3 instead..."
+        if sudo -H pip3 install -U jetson-stats; then
+            # Ensure jtop is on PATH for all users
+            if [[ -f /usr/local/bin/jtop && ! -f /usr/bin/jtop ]]; then
+                sudo ln -s /usr/local/bin/jtop /usr/bin/jtop || true
+            fi
+            log "Installed jetson-stats (jtop) via pip3"
+        else
+            warn "Failed to install jetson-stats via pip3. Continuing without it."
+        fi
+    fi
     
     log "System packages updated successfully"
 }
