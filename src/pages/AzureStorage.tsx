@@ -15,6 +15,7 @@ import { AzureStorageInfo, BlobItem } from '../models/AzureStorageInfo';
 import { AzureStorageConfigRequest } from '../models/Requests';
 import MetricCard from '../components/common/MetricCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { DatabaseConfig } from '../models/DatabaseConfig';
 
 const { Title } = Typography;
 
@@ -96,6 +97,34 @@ const AzureStorage: React.FC = () => {
         } catch (error) {
             const apiError = handleApiError(error);
             showNotification('error', 'Delete Error', apiError.message);
+        }
+    };
+
+    const openConfigModal = async (): Promise<void> => {
+        try {
+            setConfigModalVisible(true);
+            const response = await apiService.getConfigurations();
+            const configs: DatabaseConfig[] = response.data || [];
+
+            const formValues: any = {};
+
+            // Find keys by name heuristics (case-insensitive substring match)
+            configs.forEach((c) => {
+                const key = c.key?.toLowerCase?.() || '';
+                if (key.includes('defaultcontainer')) {
+                    formValues.defaultContainer = c.value;
+                }
+                if (key.includes('maxconcurrentuploads')) {
+                    const num = Number(c.value);
+                    if (!Number.isNaN(num)) formValues.maxConcurrentUploads = num;
+                }
+            });
+
+            // Do NOT prefill connection string for security
+            form.setFieldsValue(formValues);
+        } catch (error) {
+            const apiError = handleApiError(error);
+            showNotification('error', 'Load Config Error', apiError.message);
         }
     };
 
@@ -199,7 +228,7 @@ const AzureStorage: React.FC = () => {
                     <Button
                         type="primary"
                         icon={<SettingOutlined />}
-                        onClick={() => setConfigModalVisible(true)}
+                        onClick={openConfigModal}
                     >
                         Configure
                     </Button>
