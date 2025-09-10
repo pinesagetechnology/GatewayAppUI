@@ -161,14 +161,18 @@ setup_app_directory() {
 deploy_app() {
     log "Deploying application to ${APP_DIR}..."
     
-    # Copy application files (assuming current directory contains the app)
-    if [[ ! -f "package.json" ]]; then
-        error "package.json not found. Please run this script from your project root directory."
-    fi
+    # Determine project directory (defaults to current working directory)
+    local PROJECT_DIR=${PROJECT_DIR:-$PWD}
+    log "Using project directory: ${PROJECT_DIR}"
     
-    # Copy files
-    cp -r . $APP_DIR/
-    cd $APP_DIR
+    # Copy files from project directory to app directory
+    cp -r "${PROJECT_DIR}/." "$APP_DIR/"
+    cd "$APP_DIR"
+    
+    # Verify package.json exists after copy
+    if [[ ! -f "package.json" ]]; then
+        error "package.json not found in ${APP_DIR}. Ensure you run the script from your project root or set PROJECT_DIR to the project path."
+    fi
     
     # Install dependencies with ARM64 optimizations (including dev dependencies for build)
     log "Installing dependencies..."
