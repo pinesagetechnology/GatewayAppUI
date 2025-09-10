@@ -75,7 +75,7 @@ check_root() {
 update_system() {
     log "Updating system packages..."
     sudo apt update && sudo apt upgrade -y
-    sudo apt install -y curl wget git build-essential python3 python3-pip nginx
+    sudo apt install -y curl wget git rsync build-essential python3 python3-pip nginx
     
     # Install Jetson-specific packages
     sudo apt install -y nvidia-l4t-jetson-multimedia-api
@@ -153,7 +153,8 @@ setup_app_directory() {
     log "Setting up application directory..."
     
     sudo mkdir -p $APP_DIR
-    sudo chown $SERVICE_USER:$SERVICE_USER $APP_DIR
+    # Own by current user for copy/build, reassign to service user after build
+    sudo chown $USER:$USER $APP_DIR
     chmod 755 $APP_DIR
 }
 
@@ -165,8 +166,19 @@ deploy_app() {
     local PROJECT_DIR=${PROJECT_DIR:-$PWD}
     log "Using project directory: ${PROJECT_DIR}"
     
-    # Copy files from project directory to app directory
-    cp -r "${PROJECT_DIR}/." "$APP_DIR/"
+    # Copy files from project directory to app directory, excluding VCS and heavy folders
+    if command -v rsync &> /dev/null; then
+        rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.gitignore' \
+            --exclude='node_modules' \
+            --exclude='dist' \
+            "${PROJECT_DIR}/" "$APP_DIR/"
+    else
+        warn "rsync not available; falling back to cp -r (will include .git if present)"
+        cp -r "${PROJECT_DIR}/." "$APP_DIR/"
+    fi
     cd "$APP_DIR"
     
     # Verify package.json exists after copy
