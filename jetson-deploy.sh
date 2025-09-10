@@ -176,8 +176,6 @@ deploy_app() {
     
     # Install dependencies with ARM64 optimizations (including dev dependencies for build)
     log "Installing dependencies..."
-    npm config set target_arch arm64
-    npm config set target_platform linux
     npm install
     
     # Build the application
