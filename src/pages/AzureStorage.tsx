@@ -54,7 +54,7 @@ const AzureStorage: React.FC = () => {
         try {
             const response = await apiService.listBlobs(containerName);
             // Convert string array to BlobItem objects for the table
-            const blobItems: BlobItem[] = response.data.blobs.map((name, index) => ({
+            const blobItems: BlobItem[] = response.data.blobs.map((name: string, index: number) => ({
                 name,
                 url: azureInfo?.accountName ?
                     `https://${azureInfo.accountName}.blob.core.windows.net/${containerName}/${name}` :

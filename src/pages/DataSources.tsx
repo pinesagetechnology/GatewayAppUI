@@ -326,34 +326,14 @@ const DataSources: React.FC = () => {
                     
                     {/* API Data Source specific actions */}
                     {record.sourceType === 1 && (
-                        <>
-                            <Button
-                                type="link"
-                                icon={record.isEnabled ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
-                                onClick={() => handleToggleApiDataSource(record)}
-                                style={{ color: record.isEnabled ? '#ff4d4f' : '#52c41a' }}
-                            >
-                                {record.isEnabled ? 'Disable API' : 'Enable API'}
-                            </Button>
-                            {/*<Button
-                                type="link"
-                                icon={<ReloadOutlined />}
-                                onClick={async () => {
-                                    try {
-                                        // For individual API sources, we might need a different endpoint
-                                        // For now, using the global refresh - this could be updated to be per-source
-                                        await apiService.refreshApiPolling();
-                                        showNotification('success', 'API Polling Refreshed', 'API polling refresh requested');
-                                        await loadDataSources();
-                                    } catch (error) {
-                                        const apiError = handleApiError(error);
-                                        showNotification('error', 'Refresh Error', apiError.message);
-                                    }
-                                }}
-                            >
-                                Refresh
-                            </Button>*/}
-                        </>
+                        <Button
+                            type="link"
+                            icon={record.isEnabled ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+                            onClick={() => handleToggleApiDataSource(record)}
+                            style={{ color: record.isEnabled ? '#ff4d4f' : '#52c41a' }}
+                        >
+                            {record.isEnabled ? 'Disable API' : 'Enable API'}
+                        </Button>
                     )}
                     {/* <Popconfirm
                         title="Are you sure you want to delete this data source?"

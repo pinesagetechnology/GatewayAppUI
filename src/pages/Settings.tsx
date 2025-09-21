@@ -25,7 +25,7 @@ const Settings: React.FC = () => {
   const loadConfigurations = async (): Promise<void> => {
     try {
       setLoading(true);
-      const response = await apiService.getConfigurations();
+      const response = await apiService.getConfiguration();
       const configs = response.data || [] as DatabaseConfig[];
       
       setConfigurations(configs);
@@ -54,16 +54,15 @@ const Settings: React.FC = () => {
     try {
       setSaving(true);
       
-      // Save each configuration
+      // Save each configuration using the new SetConfigRequest API
       const savePromises = Object.entries(values).map(async ([key, value]: [string, any]): Promise<void> => {
         const config = configurations.find(c => c.key === key);
         if (config) {
-          await apiService.setConfiguration({
+          await apiService.setConfigRequest({
             key: key,
             value: String(value),
             description: config.description,
-            category: config.category,
-            updatedAt: new Date().toISOString()
+            category: config.category
           });
         }
       });

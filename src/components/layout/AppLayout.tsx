@@ -7,7 +7,6 @@ import {
     DatabaseOutlined,
     MonitorOutlined,
     CloudOutlined,
-    HeartOutlined,
     SettingOutlined,
     UserOutlined,
     LogoutOutlined,
@@ -41,29 +40,14 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             label: 'Dashboard',
         },
         {
-            key: '/upload-queue',
-            icon: <CloudUploadOutlined />,
-            label: 'Upload Queue',
-        },
-        {
             key: '/data-sources',
             icon: <DatabaseOutlined />,
             label: 'Data Sources',
         },
         {
-            key: '/file-monitoring',
-            icon: <MonitorOutlined />,
-            label: 'File Monitoring',
-        },
-        {
             key: '/azure-storage',
             icon: <CloudOutlined />,
             label: 'Azure Storage',
-        },
-        {
-            key: '/system-health',
-            icon: <HeartOutlined />,
-            label: 'System Health',
         },
         {
             key: '/settings',
