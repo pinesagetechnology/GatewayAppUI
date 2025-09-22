@@ -1,4 +1,3 @@
-import { DataSourceType } from "@/AppEnums";
 
 export interface AzureStorageConfigRequest {
     connectionString?: string | null;
@@ -16,26 +15,19 @@ export interface AzureTestUploadRequest {
 // Matches: CreateDataSourceRequest
 export interface CreateDataSourceRequest {
     name?: string | null;
-    sourceType?: DataSourceType;      // enum int32
     isEnabled?: boolean;
+    isRefreshing?: boolean;
     folderPath?: string | null;
-    apiEndpoint?: string | null;
-    apiKey?: string | null;
-    pollingIntervalMinutes?: number;  // int32
     filePattern?: string | null;
-    additionalSettings?: string | null; // JSON string
 }
 
-// Matches: UpdateDataSourceRequest (no sourceType in swagger)
+// Matches: UpdateDataSourceRequest
 export interface UpdateDataSourceRequest {
     name?: string | null;
     isEnabled?: boolean;
+    isRefreshing?: boolean;
     folderPath?: string | null;
-    apiEndpoint?: string | null;
-    apiKey?: string | null;
-    pollingIntervalMinutes?: number;  // int32
     filePattern?: string | null;
-    additionalSettings?: string | null;
 }
 
 // Matches: SetConfigRequest

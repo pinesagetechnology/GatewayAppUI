@@ -86,7 +86,7 @@ const Dashboard: React.FC = () => {
     }
 
     const { systemHealth, azureInfo, dataSources } = dashboardData;
-
+    
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -103,7 +103,11 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* System Status Alert */}
-            {systemHealth && !systemHealth.isHealthy && (
+            {systemHealth && 
+             systemHealth !== 'Healthy' && 
+             systemHealth !== 'healthy' && 
+             systemHealth?.status !== 'healthy' && 
+             systemHealth?.status !== 'Healthy' && (
                 <Alert
                     message="System Issues Detected"
                     description="Please check the system configuration and status."
@@ -128,9 +132,20 @@ const Dashboard: React.FC = () => {
                 <Col xs={24} sm={8}>
                     <Card>
                         <Statistic
-                            title="System Health"
-                            value={systemHealth?.isHealthy ? 'Healthy' : 'Issues'}
-                            valueStyle={{ color: systemHealth?.isHealthy ? '#52c41a' : '#ff4d4f' }}
+                            title="API Health"
+                            value={systemHealth ? 'Online' : 'Offline'}
+                            valueStyle={{ color: systemHealth ? '#52c41a' : '#ff4d4f' }}
+                            suffix={
+                                systemHealth ? (
+                                    <span style={{ fontSize: '12px', color: '#52c41a' }}>
+                                        ✓ Healthy
+                                    </span>
+                                ) : (
+                                    <span style={{ fontSize: '12px', color: '#ff4d4f' }}>
+                                        ✗ Unhealthy
+                                    </span>
+                                )
+                            }
                         />
                     </Card>
                 </Col>
@@ -145,6 +160,73 @@ const Dashboard: React.FC = () => {
                     </Card>
                 </Col>
             </Row>
+
+            {/* Health Status Details */}
+            {systemHealth && (
+                <Card title="API Health Details" style={{ marginBottom: 24 }}>
+                    <Row gutter={[16, 16]}>
+                        <Col xs={24} sm={12}>
+                            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Text strong>API Status:</Text>
+                                    <span style={{ 
+                                        color: systemHealth ? '#52c41a' : '#ff4d4f',
+                                        fontWeight: 'bold'
+                                    }}>
+                                        {systemHealth ? '✓ Online' : '✗ Offline'}
+                                    </span>
+                                </div>
+                                {typeof systemHealth === 'string' && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Text type="secondary">Response:</Text>
+                                        <Text>{systemHealth}</Text>
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Text type="secondary">Endpoint:</Text>
+                                    <Text code>/health</Text>
+                                </div>
+                                {systemHealth.timestamp && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Text type="secondary">Last Check:</Text>
+                                        <Text>{new Date(systemHealth.timestamp).toLocaleString()}</Text>
+                                    </div>
+                                )}
+                                {systemHealth.version && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Text type="secondary">Version:</Text>
+                                        <Text>{systemHealth.version}</Text>
+                                    </div>
+                                )}
+                            </Space>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                                {systemHealth.uptime && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Text type="secondary">Uptime:</Text>
+                                        <Text>{systemHealth.uptime}</Text>
+                                    </div>
+                                )}
+                                {systemHealth.environment && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Text type="secondary">Environment:</Text>
+                                        <Text>{systemHealth.environment}</Text>
+                                    </div>
+                                )}
+                                {systemHealth.dependencies && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Text type="secondary">Dependencies:</Text>
+                                        <Text style={{ color: systemHealth.dependencies.allHealthy ? '#52c41a' : '#ff4d4f' }}>
+                                            {systemHealth.dependencies.allHealthy ? 'All Healthy' : 'Issues Detected'}
+                                        </Text>
+                                    </div>
+                                )}
+                            </Space>
+                        </Col>
+                    </Row>
+                </Card>
+            )}
 
             {/* Azure Storage Status */}
             <Row gutter={[16, 16]}>
@@ -189,12 +271,12 @@ const Dashboard: React.FC = () => {
                                 <Text>{dataSources.filter(s => s.isEnabled).length}</Text>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Text strong>Folder Sources:</Text>
-                                <Text>{dataSources.filter(s => s.sourceType === 0).length}</Text>
+                                <Text strong>Refreshing:</Text>
+                                <Text>{dataSources.filter(s => s.isRefreshing).length}</Text>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Text strong>API Sources:</Text>
-                                <Text>{dataSources.filter(s => s.sourceType === 1).length}</Text>
+                                <Text strong>With Paths:</Text>
+                                <Text>{dataSources.filter(s => s.folderPath).length}</Text>
                             </div>
                         </Space>
                     </Card>

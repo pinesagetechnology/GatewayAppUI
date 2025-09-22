@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Form, Input, InputNumber, Switch, Button, Space, Typography, 
+  Card, Form, Input, InputNumber, Switch, Button, Space, Typography,
   Divider, Alert, Tabs, Row, Col, Popconfirm
 } from 'antd';
 import {
@@ -27,9 +27,9 @@ const Settings: React.FC = () => {
       setLoading(true);
       const response = await apiService.getConfiguration();
       const configs = response.data || [] as DatabaseConfig[];
-      
+
       setConfigurations(configs);
-      
+
       // Set form values
       const formValues: any = {};
       configs.forEach((config: DatabaseConfig) => {
@@ -38,7 +38,7 @@ const Settings: React.FC = () => {
         if (value === 'true') value = true;
         else if (value === 'false') value = false;
         else if (!isNaN(Number(value)) && value !== '') value = Number(value);
-        
+
         formValues[config.key] = value;
       });
       form.setFieldsValue(formValues);
@@ -53,7 +53,7 @@ const Settings: React.FC = () => {
   const handleSave = async (values: any): Promise<void> => {
     try {
       setSaving(true);
-      
+
       // Save each configuration using the new SetConfigRequest API
       const savePromises = Object.entries(values).map(async ([key, value]: [string, any]): Promise<void> => {
         const config = configurations.find(c => c.key === key);
@@ -66,7 +66,7 @@ const Settings: React.FC = () => {
           });
         }
       });
-      
+
       await Promise.all(savePromises);
       showNotification('success', 'Settings Saved', 'All configuration settings have been saved successfully');
     } catch (error) {
@@ -90,10 +90,10 @@ const Settings: React.FC = () => {
         category: item.category
       };
     });
-    
+
     const dataStr = JSON.stringify(config, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    
+
     const link = document.createElement('a');
     link.href = URL.createObjectURL(dataBlob);
     link.download = `azure-gateway-config-${new Date().toISOString().split('T')[0]}.json`;
@@ -118,7 +118,7 @@ const Settings: React.FC = () => {
 
   const renderConfigField = ({ config }: { config: DatabaseConfig }) => {
     const { key: Key, value: Value, description: Description } = config;
-    
+
     // Determine field type based on key and value
     if (Key.toLowerCase().includes('password') || Key.toLowerCase().includes('key') || Key.toLowerCase().includes('secret')) {
       return (
@@ -132,7 +132,7 @@ const Settings: React.FC = () => {
         </Form.Item>
       );
     }
-    
+
     if (Value === 'true' || Value === 'false') {
       return (
         <Form.Item
@@ -146,7 +146,7 @@ const Settings: React.FC = () => {
         </Form.Item>
       );
     }
-    
+
     if (!isNaN(Number(Value)) && Value !== '') {
       return (
         <Form.Item
@@ -159,7 +159,7 @@ const Settings: React.FC = () => {
         </Form.Item>
       );
     }
-    
+
     if (Key.toLowerCase().includes('path') || Key.toLowerCase().includes('directory')) {
       return (
         <Form.Item
@@ -172,7 +172,7 @@ const Settings: React.FC = () => {
         </Form.Item>
       );
     }
-    
+
     if (Key.toLowerCase().includes('connectionstring') || Value.length > 100) {
       return (
         <Form.Item
@@ -185,7 +185,7 @@ const Settings: React.FC = () => {
         </Form.Item>
       );
     }
-    
+
     return (
       <Form.Item
         key={Key}
@@ -259,7 +259,7 @@ const Settings: React.FC = () => {
                 {configurations.length} configuration settings loaded
               </Text>
             </Space>
-            
+
             <Space>
               <Popconfirm
                 title="Reset all settings to current saved values?"
@@ -272,9 +272,9 @@ const Settings: React.FC = () => {
                   Reset
                 </Button>
               </Popconfirm>
-              
-              <Button 
-                type="primary" 
+
+              <Button
+                type="primary"
                 icon={<SaveOutlined />}
                 htmlType="submit"
                 loading={saving}

@@ -1,5 +1,6 @@
 import { DataSourceConfig } from '@/models/DataSource';
 import { AzureStorageInfo } from '@/models/AzureStorageInfo';
+import { QueueItem, QueueSummary } from '@/models/UploadProcessor';
 import axios, { AxiosResponse } from 'axios';
 import { CreateDataSourceRequest, UpdateDataSourceRequest, SetConfigRequest } from '@/models/Requests';
 import { ApiError } from '@/models/ApiError';
@@ -7,7 +8,7 @@ import { ApiError } from '@/models/ApiError';
 // Use relative base URL so the browser calls the same host serving the UI (Nginx),
 // and let Nginx proxy /api and /hubs to the backend (e.g., localhost:5000) on the device.
 // const API_BASE_URL = '';
-const API_BASE_URL = process.env.NODE_ENV === 'development' ? 'https://localhost:7168' : '';
+const API_BASE_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : '';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -88,6 +89,18 @@ export const apiService = {
         apiClient.get('/api/Configuration/config'),
     setConfigRequest: (config: SetConfigRequest): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/Configuration/config', config),
+
+    // Upload Processor endpoints
+    getQueueItems: (): Promise<AxiosResponse<QueueItem[]>> =>
+        apiClient.get('/api/UploadProcessor/all'),
+    getPendingQueueItems: (): Promise<AxiosResponse<QueueItem[]>> =>
+        apiClient.get('/api/UploadProcessor/pending'),
+    getFailedQueueItems: (): Promise<AxiosResponse<QueueItem[]>> =>
+        apiClient.get('/api/UploadProcessor/failed'),
+    getQueueSummary: (): Promise<AxiosResponse<QueueSummary>> =>
+        apiClient.get('/api/UploadProcessor/summary'),
+    reprocessQueueItem: (id: number): Promise<AxiosResponse<void>> =>
+        apiClient.put(`/api/UploadProcessor/reprocess/${id}`),
 };
 
 // Utility functions for API responses

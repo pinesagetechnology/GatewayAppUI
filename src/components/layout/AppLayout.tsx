@@ -12,6 +12,7 @@ import {
     LogoutOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
+    SyncOutlined,
 } from '@ant-design/icons';
 import SystemStatusIndicator from '../common/SystemStatusIndicator';
 
@@ -43,6 +44,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             key: '/data-sources',
             icon: <DatabaseOutlined />,
             label: 'Data Sources',
+        },
+        {
+            key: '/upload-processor',
+            icon: <SyncOutlined />,
+            label: 'Upload Queue',
         },
         {
             key: '/azure-storage',

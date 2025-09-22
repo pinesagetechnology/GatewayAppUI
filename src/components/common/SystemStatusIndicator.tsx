@@ -1,4 +1,3 @@
-// src/components/common/SystemStatusIndicator.tsx - System status indicator
 import React, { useState, useEffect } from 'react';
 import { Space, Badge, Tooltip, Typography } from 'antd';
 import { apiService } from '../../services/apiService';
@@ -9,7 +8,7 @@ interface SystemStatus {
     azure: {
         isConnected: boolean;
     };
-    database: {
+    api: {
         isHealthy: boolean;
     };
 }
@@ -22,7 +21,7 @@ interface OverallStatus {
 const SystemStatusIndicator: React.FC = () => {
     const [systemStatus, setSystemStatus] = useState<SystemStatus>({
         azure: { isConnected: false },
-        database: { isHealthy: true },
+        api: { isHealthy: true },
     });
 
     const loadSystemStatus = async (): Promise<void> => {
@@ -32,12 +31,15 @@ const SystemStatusIndicator: React.FC = () => {
                 apiService.getHealth(),
             ]);
 
+            // Determine if health is healthy based on successful response
+            const isHealthy = healthRes.status === 'fulfilled' && healthRes.value.status === 200;
+
             setSystemStatus({
                 azure: {
                     isConnected: azureRes.status === 'fulfilled' ? azureRes.value.data.isConnected : false,
                 },
-                database: {
-                    isHealthy: healthRes.status === 'fulfilled' ? healthRes.value.data.isHealthy : false,
+                api: {
+                    isHealthy: isHealthy,
                 },
             });
         } catch (error) {
@@ -50,9 +52,9 @@ const SystemStatusIndicator: React.FC = () => {
     }, []);
 
     const getOverallStatus = (): OverallStatus => {
-        const { azure, database } = systemStatus;
+        const { azure, api } = systemStatus;
 
-        if (!database.isHealthy) return { status: 'error', text: 'System Error' };
+        if (!api.isHealthy) return { status: 'error', text: 'System Error' };
         if (!azure.isConnected) return { status: 'warning', text: 'Azure Disconnected' };
         return { status: 'success', text: 'System Running' };
     };
@@ -63,7 +65,7 @@ const SystemStatusIndicator: React.FC = () => {
         <div>
             <div><strong>System Status</strong></div>
             <div>Azure: {systemStatus.azure.isConnected ? 'Connected' : 'Disconnected'}</div>
-            <div>Database: {systemStatus.database.isHealthy ? 'Healthy' : 'Error'}</div>
+            <div>API: {systemStatus.api.isHealthy ? 'Healthy' : 'Error'}</div>
         </div>
     );
 

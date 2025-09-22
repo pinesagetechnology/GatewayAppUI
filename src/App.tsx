@@ -5,6 +5,7 @@ import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import DataSources from './pages/DataSources';
 import AzureStorage from './pages/AzureStorage';
+import UploadProcessor from './pages/UploadProcessor';
 import Settings from './pages/Settings';
 import { NotificationProvider } from './contexts/NotificationContext';
 import 'antd/dist/reset.css';
@@ -29,6 +30,7 @@ const App: React.FC = () => {
                             <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/data-sources" element={<DataSources />} />
                             <Route path="/azure-storage" element={<AzureStorage />} />
+                            <Route path="/upload-processor" element={<UploadProcessor />} />
                             <Route path="/settings" element={<Settings />} />
                         </Routes>
                     </AppLayout>
