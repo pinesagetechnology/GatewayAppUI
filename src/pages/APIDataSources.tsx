@@ -386,9 +386,9 @@ const APIDataSources: React.FC = () => {
                     <Form.Item
                         name="apiKey"
                         label="API Key"
-                        rules={[{ required: true, message: 'Please enter API key' }]}
+                        rules={[{ required: false }]}
                     >
-                        <Input.Password placeholder="Enter API key" />
+                        <Input.Password placeholder="Enter API key (optional)" />
                     </Form.Item>
 
                     <Form.Item

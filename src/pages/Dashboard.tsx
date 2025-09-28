@@ -9,6 +9,8 @@ import {
 import { useNotification } from '../contexts/NotificationContext';
 import { apiService, formatFileSize, getStatusColor, handleApiError } from '../services/apiService';
 import { AzureStorageInfo } from '../models/AzureStorageInfo';
+import { Heartbeat } from '../models/Heartbeat';
+import HeartbeatCard from '../components/common/HeartbeatCard';
 
 const { Title, Text } = Typography;
 
@@ -16,6 +18,9 @@ interface DashboardData {
     systemHealth: any | null;
     azureInfo: AzureStorageInfo | null;
     dataSources: any[];
+    apiDataSources: any[];
+    apiServiceHeartbeat: Heartbeat | null;
+    fileServiceHeartbeat: Heartbeat | null;
 }
 
 const Dashboard: React.FC = () => {
@@ -24,6 +29,9 @@ const Dashboard: React.FC = () => {
         systemHealth: null,
         azureInfo: null,
         dataSources: [],
+        apiDataSources: [],
+        apiServiceHeartbeat: null,
+        fileServiceHeartbeat: null,
     });
     const [refreshing, setRefreshing] = useState<boolean>(false);
 
@@ -37,10 +45,16 @@ const Dashboard: React.FC = () => {
                 healthResponse,
                 azureResponse,
                 dataSourcesResponse,
+                apiDataSourcesResponse,
+                apiHeartbeatResponse,
+                fileHeartbeatResponse,
             ] = await Promise.allSettled([
                 apiService.getHealth(),
                 apiService.getAzureStorageInfo(),
                 apiService.getDataSources(),
+                apiService.getAPIDataSources(),
+                apiService.getApiServiceHeartbeat(),
+                apiService.getFileServiceHeartbeat(),
             ]);
 
             const newData = { ...dashboardData };
@@ -56,6 +70,18 @@ const Dashboard: React.FC = () => {
 
             if (dataSourcesResponse.status === 'fulfilled') {
                 newData.dataSources = dataSourcesResponse.value.data || [];
+            }
+
+            if (apiDataSourcesResponse.status === 'fulfilled') {
+                newData.apiDataSources = apiDataSourcesResponse.value.data || [];
+            }
+
+            if (apiHeartbeatResponse.status === 'fulfilled') {
+                newData.apiServiceHeartbeat = apiHeartbeatResponse.value.data;
+            }
+
+            if (fileHeartbeatResponse.status === 'fulfilled') {
+                newData.fileServiceHeartbeat = fileHeartbeatResponse.value.data;
             }
 
             setDashboardData(newData);
@@ -85,7 +111,7 @@ const Dashboard: React.FC = () => {
         );
     }
 
-    const { systemHealth, azureInfo, dataSources } = dashboardData;
+    const { systemHealth, azureInfo, dataSources, apiDataSources, apiServiceHeartbeat, fileServiceHeartbeat } = dashboardData;
     
     return (
         <div>
@@ -124,7 +150,7 @@ const Dashboard: React.FC = () => {
                     <Card>
                         <Statistic
                             title="Data Sources"
-                            value={dataSources.length}
+                            value={dataSources.length + apiDataSources.length}
                             prefix={<DatabaseOutlined />}
                         />
                     </Card>
@@ -229,7 +255,7 @@ const Dashboard: React.FC = () => {
             )}
 
             {/* Azure Storage Status */}
-            <Row gutter={[16, 16]}>
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
                 <Col xs={24} lg={12}>
                     <Card title="Azure Storage Status" size="small">
                         <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -264,22 +290,44 @@ const Dashboard: React.FC = () => {
                         <Space direction="vertical" size="small" style={{ width: '100%' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Text strong>Total Sources:</Text>
+                                <Text>{dataSources.length + apiDataSources.length}</Text>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Text strong>File Sources:</Text>
                                 <Text>{dataSources.length}</Text>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Text strong>API Sources:</Text>
+                                <Text>{apiDataSources.length}</Text>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Text strong>Enabled:</Text>
-                                <Text>{dataSources.filter(s => s.isEnabled).length}</Text>
+                                <Text>{dataSources.filter(s => s.isEnabled).length + apiDataSources.filter(s => s.isEnabled).length}</Text>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Text strong>Refreshing:</Text>
-                                <Text>{dataSources.filter(s => s.isRefreshing).length}</Text>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Text strong>With Paths:</Text>
-                                <Text>{dataSources.filter(s => s.folderPath).length}</Text>
+                                <Text>{dataSources.filter(s => s.isRefreshing).length + apiDataSources.filter(s => s.isRefreshing).length}</Text>
                             </div>
                         </Space>
                     </Card>
+                </Col>
+            </Row>
+
+            {/* Service Heartbeats */}
+            <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12}>
+                    <HeartbeatCard 
+                        title="API Service Heartbeat"
+                        heartbeat={apiServiceHeartbeat}
+                        loading={refreshing}
+                    />
+                </Col>
+                <Col xs={24} sm={12}>
+                    <HeartbeatCard 
+                        title="File Service Heartbeat"
+                        heartbeat={fileServiceHeartbeat}
+                        loading={refreshing}
+                    />
                 </Col>
             </Row>
         </div>

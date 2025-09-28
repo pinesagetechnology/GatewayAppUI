@@ -2,6 +2,7 @@ import { FileDataSourceConfig } from '@/models/FileDataSource';
 import { APIDataSourceConfig } from '@/models/APIDataSource';
 import { AzureStorageInfo } from '@/models/AzureStorageInfo';
 import { QueueItem, QueueSummary } from '@/models/UploadProcessor';
+import { Heartbeat } from '@/models/Heartbeat';
 import axios, { AxiosResponse } from 'axios';
 import { CreateDataSourceRequest, UpdateDataSourceRequest, SetConfigRequest } from '@/models/Requests';
 import { ApiError } from '@/models/ApiError';
@@ -116,6 +117,12 @@ export const apiService = {
         apiClient.get('/api/UploadProcessor/summary'),
     reprocessQueueItem: (id: number): Promise<AxiosResponse<void>> =>
         apiClient.put(`/api/UploadProcessor/reprocess/${id}`),
+
+    // Heartbeat endpoints
+    getApiServiceHeartbeat: (): Promise<AxiosResponse<Heartbeat>> =>
+        apiClient.get('/api/Heartbeats/apiservice'),
+    getFileServiceHeartbeat: (): Promise<AxiosResponse<Heartbeat>> =>
+        apiClient.get('/api/Heartbeats/fileservice'),
 };
 
 // Utility functions for API responses

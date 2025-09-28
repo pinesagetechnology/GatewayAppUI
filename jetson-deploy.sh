@@ -203,22 +203,22 @@ configure_nginx() {
     log "Configuring Nginx reverse proxy with Jetson optimizations..."
     
     # Create Nginx configuration for Jetson (server block only)
-    sudo tee /etc/nginx/sites-available/$APP_NAME > /dev/null <<EOF
+    sudo tee /etc/nginx/sites-available/$APP_NAME > /dev/null <<'EOF'
 server {
-    listen 80;
-    server_name localhost;
-    root ${APP_DIR}/dist;
+    listen 80 default_server;
+    server_name _;
+    root /opt/react-ui-app/dist;
     index index.html;
-    
+
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header X-Content-Type-Options "nosniff" always;
-    
+
     # Serve static files directly
     location / {
         try_files $uri $uri/ /index.html;
-        
+
         # Cache headers for static assets
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
             expires 1y;
@@ -226,25 +226,20 @@ server {
             access_log off;
         }
     }
-    
+
     # Proxy API requests to backend (adjust port if needed)
     location /api/ {
         proxy_pass http://localhost:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
+        proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-        
-        # Jetson-optimized proxy settings
-        proxy_connect_timeout 30s;
-        proxy_send_timeout 30s;
-        proxy_read_timeout 30s;
     }
-    
+
     # SignalR hub with WebSocket support (if backend exists)
     location /hubs/ {
         proxy_pass http://localhost:5000;
@@ -256,12 +251,10 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-        
-        # WebSocket timeout settings
         proxy_read_timeout 86400;
         proxy_send_timeout 86400;
     }
-    
+
     # SignalR hub (non-prefixed route used by API)
     location /uploadStatusHub {
         proxy_pass http://localhost:5000;
