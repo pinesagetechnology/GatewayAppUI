@@ -1,4 +1,5 @@
-import { DataSourceConfig } from '@/models/DataSource';
+import { FileDataSourceConfig } from '@/models/FileDataSource';
+import { APIDataSourceConfig } from '@/models/APIDataSource';
 import { AzureStorageInfo } from '@/models/AzureStorageInfo';
 import { QueueItem, QueueSummary } from '@/models/UploadProcessor';
 import axios, { AxiosResponse } from 'axios';
@@ -7,8 +8,8 @@ import { ApiError } from '@/models/ApiError';
 
 // Use relative base URL so the browser calls the same host serving the UI (Nginx),
 // and let Nginx proxy /api and /hubs to the backend (e.g., localhost:5000) on the device.
-// const API_BASE_URL = '';
-const API_BASE_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : '';
+// In development, use relative URLs to go through webpack dev server proxy
+const API_BASE_URL = '';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -52,10 +53,10 @@ export const apiService = {
     getHealth: (): Promise<AxiosResponse<any>> =>
         apiClient.get('/health'),
 
-    // Data sources (placeholder - needs implementation in API)
-    getDataSources: (): Promise<AxiosResponse<DataSourceConfig[]>> =>
+    // File Data sources
+    getDataSources: (): Promise<AxiosResponse<FileDataSourceConfig[]>> =>
         apiClient.get('/api/datasource'),
-    getDataSource: (id: string | number): Promise<AxiosResponse<DataSourceConfig>> =>
+    getDataSource: (id: string | number): Promise<AxiosResponse<FileDataSourceConfig>> =>
         apiClient.get(`/api/datasource/${id}`),
     createDataSource: (data: Partial<CreateDataSourceRequest>): Promise<AxiosResponse<CreateDataSourceRequest>> =>
         apiClient.post('/api/datasource', data),
@@ -63,6 +64,20 @@ export const apiService = {
         apiClient.put(`/api/datasource/${id}`, data),
     deleteDataSource: (id: string | number): Promise<AxiosResponse<void>> =>
         apiClient.delete(`/api/datasource/${id}`),
+
+    // API Data sources
+    getAPIDataSources: (): Promise<AxiosResponse<APIDataSourceConfig[]>> =>
+        apiClient.get('/api/APIDataSource'),
+    getAPIDataSource: (id: string | number): Promise<AxiosResponse<APIDataSourceConfig>> =>
+        apiClient.get(`/api/APIDataSource/${id}`),
+    getAPIDataSourceByName: (name: string): Promise<AxiosResponse<APIDataSourceConfig>> =>
+        apiClient.get(`/api/APIDataSource/byname/${name}`),
+    createAPIDataSource: (data: Partial<APIDataSourceConfig>): Promise<AxiosResponse<APIDataSourceConfig>> =>
+        apiClient.post('/api/APIDataSource', data),
+    updateAPIDataSource: (id: string | number, data: Partial<APIDataSourceConfig>): Promise<AxiosResponse<APIDataSourceConfig>> =>
+        apiClient.put(`/api/APIDataSource/${id}`, data),
+    deleteAPIDataSource: (id: string | number): Promise<AxiosResponse<void>> =>
+        apiClient.delete(`/api/APIDataSource/${id}`),
 
     // Azure Storage (working endpoints)
     getAzureStorageInfo: (): Promise<AxiosResponse<AzureStorageInfo>> =>

@@ -10,15 +10,15 @@ import {
 } from '@ant-design/icons';
 import { useNotification } from '../contexts/NotificationContext';
 import { apiService, handleApiError } from '../services/apiService';
-import { DataSourceConfig } from '../models/DataSource';
+import { FileDataSourceConfig } from '../models/FileDataSource';
 
 const { Title, Text } = Typography;
 
 const DataSources: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
-    const [dataSources, setDataSources] = useState<DataSourceConfig[]>([]);
+    const [dataSources, setDataSources] = useState<FileDataSourceConfig[]>([]);
     const [modalVisible, setModalVisible] = useState<boolean>(false);
-    const [editingSource, setEditingSource] = useState<DataSourceConfig | null>(null);
+    const [editingSource, setEditingSource] = useState<FileDataSourceConfig | null>(null);
 
     const [form] = Form.useForm();
     const { showNotification } = useNotification();
@@ -47,7 +47,7 @@ const DataSources: React.FC = () => {
         setModalVisible(true);
     };
 
-    const handleEdit = (source: DataSourceConfig) => {
+    const handleEdit = (source: FileDataSourceConfig) => {
         setEditingSource(source);
         form.setFieldsValue({
             name: source.name,
@@ -71,7 +71,7 @@ const DataSources: React.FC = () => {
     };
 
     // Function to enable/disable data sources
-    const handleToggleStatus = async (source: DataSourceConfig) => {
+    const handleToggleStatus = async (source: FileDataSourceConfig) => {
         try {
             const updatedSource = { ...source, isEnabled: !source.isEnabled };
             await apiService.updateDataSource(source.id, updatedSource);
@@ -150,7 +150,7 @@ const DataSources: React.FC = () => {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            render: (text: string, record: DataSourceConfig) => (
+            render: (text: string, record: FileDataSourceConfig) => (
                 <Space>
                     <FolderOutlined />
                     <Text strong>{text}</Text>
@@ -161,7 +161,7 @@ const DataSources: React.FC = () => {
             title: 'Status',
             dataIndex: 'isEnabled',
             key: 'isEnabled',
-            render: (isEnabled: boolean, record: DataSourceConfig) => (
+            render: (isEnabled: boolean, record: FileDataSourceConfig) => (
                 <Switch
                     checked={isEnabled}
                     onChange={() => handleToggleStatus(record)}
@@ -196,7 +196,7 @@ const DataSources: React.FC = () => {
         {
             title: 'Actions',
             key: 'actions',
-            render: (text: any, record: DataSourceConfig) => (
+            render: (text: any, record: FileDataSourceConfig) => (
                 <Space>
                     <Tooltip 
                         title={record.isEnabled ? "Disable the data source before editing configuration" : "Edit data source configuration"}

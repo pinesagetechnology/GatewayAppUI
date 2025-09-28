@@ -1,10 +1,13 @@
-export interface DataSourceConfig {
+export interface APIDataSourceConfig {
     id: number;
     name: string;
     isEnabled: boolean;
     isRefreshing: boolean;
-    folderPath: string | null;
-    filePattern: string | null;
+    tempFolderPath: string;
+    apiEndpoint: string;
+    apiKey: string;
+    pollingIntervalMinutes: number;
     createdAt: string;            // ISO datetime string
     lastProcessedAt: string | null;
+    additionalSettings: string;
 }

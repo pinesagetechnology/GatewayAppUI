@@ -13,6 +13,7 @@ import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     SyncOutlined,
+    ApiOutlined,
 } from '@ant-design/icons';
 import SystemStatusIndicator from '../common/SystemStatusIndicator';
 
@@ -44,6 +45,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             key: '/data-sources',
             icon: <DatabaseOutlined />,
             label: 'Data Sources',
+        },
+        {
+            key: '/api-data-sources',
+            icon: <ApiOutlined />,
+            label: 'API Data Sources',
         },
         {
             key: '/upload-processor',
