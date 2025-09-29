@@ -56,15 +56,15 @@ export const apiService = {
 
     // File Data sources
     getDataSources: (): Promise<AxiosResponse<FileDataSourceConfig[]>> =>
-        apiClient.get('/api/datasource'),
+        apiClient.get('/api/DataSource'),
     getDataSource: (id: string | number): Promise<AxiosResponse<FileDataSourceConfig>> =>
-        apiClient.get(`/api/datasource/${id}`),
+        apiClient.get(`/api/DataSource/${id}`),
     createDataSource: (data: Partial<CreateDataSourceRequest>): Promise<AxiosResponse<CreateDataSourceRequest>> =>
-        apiClient.post('/api/datasource', data),
+        apiClient.post('/api/DataSource', data),
     updateDataSource: (id: string | number, data: Partial<UpdateDataSourceRequest>): Promise<AxiosResponse<UpdateDataSourceRequest>> =>
-        apiClient.put(`/api/datasource/${id}`, data),
+        apiClient.put(`/api/DataSource/${id}`, data),
     deleteDataSource: (id: string | number): Promise<AxiosResponse<void>> =>
-        apiClient.delete(`/api/datasource/${id}`),
+        apiClient.delete(`/api/DataSource/${id}`),
 
     // API Data sources
     getAPIDataSources: (): Promise<AxiosResponse<APIDataSourceConfig[]>> =>
@@ -98,13 +98,19 @@ export const apiService = {
     configureAzureStorage: (config: any): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/azurestorage/configure', config),
 
-    // Configuration (working endpoints)
+    // File Monitor Configuration
     getConfiguration: (): Promise<AxiosResponse<any>> =>
         apiClient.get('/api/Configuration/config'),
     getConfigurations: (): Promise<AxiosResponse<any>> =>
         apiClient.get('/api/Configuration/config'),
     setConfigRequest: (config: SetConfigRequest): Promise<AxiosResponse<void>> =>
         apiClient.post('/api/Configuration/config', config),
+
+    // API Service Configuration
+    getApiConfiguration: (): Promise<AxiosResponse<any>> =>
+        apiClient.get('/api/APIConfiguration/config'),
+    setApiConfigRequest: (config: SetConfigRequest): Promise<AxiosResponse<void>> =>
+        apiClient.post('/api/APIConfiguration/config', config),
 
     // Upload Processor endpoints
     getQueueItems: (): Promise<AxiosResponse<QueueItem[]>> =>

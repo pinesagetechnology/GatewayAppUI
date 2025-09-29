@@ -17,31 +17,47 @@ const { TextArea } = Input;
 
 const Settings: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
-  const [saving, setSaving] = useState<boolean>(false);
-  const [configurations, setConfigurations] = useState<DatabaseConfig[]>([]);
-  const [form] = Form.useForm();
+  const [savingFile, setSavingFile] = useState<boolean>(false);
+  const [savingApi, setSavingApi] = useState<boolean>(false);
+  const [fileConfigurations, setFileConfigurations] = useState<DatabaseConfig[]>([]);
+  const [apiConfigurations, setApiConfigurations] = useState<DatabaseConfig[]>([]);
+  const [fileForm] = Form.useForm();
+  const [apiForm] = Form.useForm();
   const { showNotification } = useNotification();
 
   const loadConfigurations = async (): Promise<void> => {
     try {
       setLoading(true);
-      const response = await apiService.getConfiguration();
-      const configs = response.data || [] as DatabaseConfig[];
+      const [fileRes, apiRes] = await Promise.all([
+        apiService.getConfiguration(),
+        apiService.getApiConfiguration(),
+      ]);
 
-      setConfigurations(configs);
+      const fileConfigs = (fileRes.data || []) as DatabaseConfig[];
+      const apiConfigs = (apiRes.data || []) as DatabaseConfig[];
 
-      // Set form values
-      const formValues: any = {};
-      configs.forEach((config: DatabaseConfig) => {
-        // Convert string values to appropriate types
+      setFileConfigurations(fileConfigs);
+      setApiConfigurations(apiConfigs);
+
+      const fileFormValues: any = {};
+      fileConfigs.forEach((config: DatabaseConfig) => {
         let value: any = config.value;
         if (value === 'true') value = true;
         else if (value === 'false') value = false;
         else if (!isNaN(Number(value)) && value !== '') value = Number(value);
-
-        formValues[config.key] = value;
+        fileFormValues[config.key] = value;
       });
-      form.setFieldsValue(formValues);
+      fileForm.setFieldsValue(fileFormValues);
+
+      const apiFormValues: any = {};
+      apiConfigs.forEach((config: DatabaseConfig) => {
+        let value: any = config.value;
+        if (value === 'true') value = true;
+        else if (value === 'false') value = false;
+        else if (!isNaN(Number(value)) && value !== '') value = Number(value);
+        apiFormValues[config.key] = value;
+      });
+      apiForm.setFieldsValue(apiFormValues);
     } catch (error) {
       const apiError = handleApiError(error);
       showNotification('error', 'Load Error', apiError.message);
@@ -50,13 +66,11 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleSave = async (values: any): Promise<void> => {
+  const handleSaveFile = async (values: any): Promise<void> => {
     try {
-      setSaving(true);
-
-      // Save each configuration using the new SetConfigRequest API
+      setSavingFile(true);
       const savePromises = Object.entries(values).map(async ([key, value]: [string, any]): Promise<void> => {
-        const config = configurations.find(c => c.key === key);
+        const config = fileConfigurations.find(c => c.key === key);
         if (config) {
           await apiService.setConfigRequest({
             key: key,
@@ -66,24 +80,51 @@ const Settings: React.FC = () => {
           });
         }
       });
-
       await Promise.all(savePromises);
-      showNotification('success', 'Settings Saved', 'All configuration settings have been saved successfully');
+      showNotification('success', 'File Monitor Settings Saved', 'File monitor configuration saved successfully');
     } catch (error) {
       const apiError = handleApiError(error);
       showNotification('error', 'Save Error', apiError.message);
     } finally {
-      setSaving(false);
+      setSavingFile(false);
     }
   };
 
-  const handleReset = () => {
-    form.resetFields();
+  const handleSaveApi = async (values: any): Promise<void> => {
+    try {
+      setSavingApi(true);
+      const savePromises = Object.entries(values).map(async ([key, value]: [string, any]): Promise<void> => {
+        const config = apiConfigurations.find(c => c.key === key);
+        if (config) {
+          await apiService.setApiConfigRequest({
+            key: key,
+            value: String(value),
+            description: config.description,
+            category: config.category
+          });
+        }
+      });
+      await Promise.all(savePromises);
+      showNotification('success', 'API Service Settings Saved', 'API service configuration saved successfully');
+    } catch (error) {
+      const apiError = handleApiError(error);
+      showNotification('error', 'Save Error', apiError.message);
+    } finally {
+      setSavingApi(false);
+    }
+  };
+
+  const handleResetFile = () => {
+    fileForm.resetFields();
+  };
+
+  const handleResetApi = () => {
+    apiForm.resetFields();
   };
 
   const handleExportConfig = () => {
     const config: any = {};
-    configurations.forEach(item => {
+    [...fileConfigurations, ...apiConfigurations].forEach(item => {
       config[item.key] = {
         value: item.value,
         description: item.description,
@@ -109,7 +150,14 @@ const Settings: React.FC = () => {
   }
 
   // Group configurations by category
-  const configsByCategory = configurations.reduce((acc: any, config: DatabaseConfig) => {
+  const fileConfigsByCategory = fileConfigurations.reduce((acc: any, config: DatabaseConfig) => {
+    const category = config.category || 'General';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(config);
+    return acc;
+  }, {});
+
+  const apiConfigsByCategory = apiConfigurations.reduce((acc: any, config: DatabaseConfig) => {
     const category = config.category || 'General';
     if (!acc[category]) acc[category] = [];
     acc[category].push(config);
@@ -198,7 +246,23 @@ const Settings: React.FC = () => {
     );
   };
 
-  const tabItems = Object.entries(configsByCategory).map(([category, configs]: any) => ({
+  const fileTabItems = Object.entries(fileConfigsByCategory).map(([category, configs]: any) => ({
+    key: category,
+    label: category,
+    children: (
+      <div>
+        <Row gutter={[16, 16]}>
+          {configs.map((config: DatabaseConfig) => (
+            <Col xs={24} md={12} key={config.key}>
+              {renderConfigField({ config })}
+            </Col>
+          ))}
+        </Row>
+      </div>
+    )
+  }));
+
+  const apiTabItems = Object.entries(apiConfigsByCategory).map(([category, configs]: any) => ({
     key: category,
     label: category,
     children: (
@@ -239,14 +303,16 @@ const Settings: React.FC = () => {
         style={{ marginBottom: 24 }}
       />
 
-      <Card>
+      {/* File Monitor Configuration */}
+      <Card style={{ marginBottom: 24 }}>
+        <Title level={4} style={{ marginTop: 0 }}>File Monitor Configuration</Title>
         <Form
-          form={form}
+          form={fileForm}
           layout="vertical"
-          onFinish={handleSave}
+          onFinish={handleSaveFile}
         >
           <Tabs
-            items={tabItems}
+            items={fileTabItems}
             tabPosition="top"
             size="large"
           />
@@ -256,15 +322,15 @@ const Settings: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Space>
               <Text type="secondary">
-                {configurations.length} configuration settings loaded
+                {fileConfigurations.length} configuration settings loaded
               </Text>
             </Space>
 
             <Space>
               <Popconfirm
-                title="Reset all settings to current saved values?"
+                title="Reset all file monitor settings to current saved values?"
                 description="This will discard any unsaved changes."
-                onConfirm={handleReset}
+                onConfirm={handleResetFile}
                 okText="Yes"
                 cancelText="No"
               >
@@ -277,9 +343,58 @@ const Settings: React.FC = () => {
                 type="primary"
                 icon={<SaveOutlined />}
                 htmlType="submit"
-                loading={saving}
+                loading={savingFile}
               >
-                Save All Settings
+                Save File Monitor Settings
+              </Button>
+            </Space>
+          </div>
+        </Form>
+      </Card>
+
+      {/* API Service Configuration */}
+      <Card>
+        <Title level={4} style={{ marginTop: 0 }}>API Service Configuration</Title>
+        <Form
+          form={apiForm}
+          layout="vertical"
+          onFinish={handleSaveApi}
+        >
+          <Tabs
+            items={apiTabItems}
+            tabPosition="top"
+            size="large"
+          />
+
+          <Divider />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Space>
+              <Text type="secondary">
+                {apiConfigurations.length} configuration settings loaded
+              </Text>
+            </Space>
+
+            <Space>
+              <Popconfirm
+                title="Reset all API service settings to current saved values?"
+                description="This will discard any unsaved changes."
+                onConfirm={handleResetApi}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button icon={<UndoOutlined />}>
+                  Reset
+                </Button>
+              </Popconfirm>
+
+              <Button
+                type="primary"
+                icon={<SaveOutlined />}
+                htmlType="submit"
+                loading={savingApi}
+              >
+                Save API Service Settings
               </Button>
             </Space>
           </div>
