@@ -86,12 +86,23 @@ install_nodejs() {
 # Install PM2 globally
 install_pm2() {
     log "Installing PM2 process manager..."
-    sudo npm install -g pm2
+    
+    # Check if PM2 is already installed
+    if command -v pm2 &> /dev/null; then
+        log "PM2 is already installed. Updating..."
+        sudo npm install -g pm2@latest
+        
+        # Update the in-memory PM2 daemon to match the CLI version
+        pm2 update
+        log "PM2 updated successfully"
+    else
+        log "Installing PM2..."
+        sudo npm install -g pm2
+        log "PM2 installed successfully"
+    fi
     
     # Setup PM2 startup script
     sudo pm2 startup systemd -u $SERVICE_USER --hp /home/$SERVICE_USER
-    
-    log "PM2 installed successfully"
 }
 
 # Create application directory and set permissions
@@ -155,6 +166,16 @@ server {
         }
     }
     
+    # Health check endpoint
+    location /health {
+        proxy_pass http://localhost:5000/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+    
     # Proxy API requests to backend (adjust port if needed)
     location /api/ {
         proxy_pass http://localhost:5000;
@@ -166,33 +187,6 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
-    }
-    
-    # SignalR hub
-    location /hubs/ {
-        proxy_pass http://localhost:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
-        proxy_read_timeout 86400;
-        proxy_send_timeout 86400;
-    }
-
-    # SignalR hub (non-prefixed route used by API)
-    location /uploadStatusHub {
-        proxy_pass http://localhost:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_read_timeout 86400;
-        proxy_send_timeout 86400;
     }
     
     # Gzip compression
